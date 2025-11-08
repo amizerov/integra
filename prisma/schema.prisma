@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Пользователи системы
+model AllowedUser {
+  userId         Int       @id @map("user_id")
+  userLevel      Int?      @map("user_level")
+  fio            String?   @db.VarChar(90)
+  eMail          String?   @map("e_mail") @db.VarChar(50)
+  phoneNumber    String?   @map("phone_number") @db.VarChar(20)
+  userPassword   String?   @map("user_password") @db.VarChar(100)
+  userLogin      String?   @map("user_login") @db.VarChar(30)
+  passwordHash   String?   @map("password_hash") @db.VarChar(255)
+  isActive       Int?      @map("is_active")
+  comment        String?   @db.VarChar(255)
+
+  createdVersions  SystemVersion[] @relation("VersionCreator")
+  modifiedVersions SystemVersion[] @relation("VersionModifier")
+
+  @@map("allowed_users")
+}
+
+// АИС - Автоматизированные Информационные Системы
+model InformationSystem {
+  systemId         Int       @id @map("system_id")
+  systemShortName  String?   @map("system_short_name") @db.VarChar(64)
+  systemName       String?   @map("system_name") @db.VarChar(255)
+  hasPersonalData  Int?      @map("has_personal_data")
+  userId           Int?      @map("user_id")
+  creationDate     DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser   Int?      @map("last_change_user")
+  lastChangeDate   DateTime? @map("last_change_date") @db.Timestamp(6)
+
+  versions         SystemVersion[]
+  documents        ManagingDocument[]
+  
+  @@map("intgr1_information_systems")
+}
+
+// Версии систем
+model SystemVersion {
+  systemId                  Int       @map("system_id")
+  versionDevelopmentYear    Int?      @map("version_development_year")
+  productionStartYear       Int?      @map("production_start_year")
+  versionId                 Int       @id @map("version_id")
+  endOfUsageYear            Int?      @map("end_of_usage_year")
+  developingOrganization    String?   @map("developing_organization") @db.VarChar(255)
+  developingUnit            String?   @map("developing_unit") @db.VarChar(255)
+  versionAuthors            String?   @map("version_authors") @db.VarChar(1000)
+  versionCode               String?   @map("version_code") @db.VarChar(50)
+  versionComment            String?   @map("version_comment") @db.VarChar(1000)
+  operatingUnit             String?   @map("operating_unit") @db.VarChar(255)
+  technicalSupportUnit      String?   @map("technical_suppport_unit") @db.VarChar(255)
+  operatingPlace            String?   @map("operating_place") @db.VarChar(1000)
+  programmingTools          String?   @map("programming_tools") @db.VarChar(1000)
+  operatingEnvironment      String?   @map("operating_environment") @db.VarChar(1000)
+  userId                    Int?      @map("user_id")
+  creationDate              DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser            Int?      @map("last_change_user")
+  lastChangeDate            DateTime? @map("last_change_date") @db.Timestamp(6)
+
+  system                    InformationSystem @relation(fields: [systemId], references: [systemId])
+  creator                   AllowedUser? @relation("VersionCreator", fields: [userId], references: [userId])
+  modifier                  AllowedUser? @relation("VersionModifier", fields: [lastChangeUser], references: [userId])
+  userGuides                UserGuide[]
+  schemas                   Schema[]
+  dataStreamsSource         DataStream[] @relation("SourceVersion")
+  dataStreamsRecipient      DataStream[] @relation("RecipientVersion")
+  exchangeFormats           ExchangeFormat[]
+  
+  @@map("intgr2_system_versions")
+}
+
+// Нормативные документы
+model ManagingDocument {
+  systemId                  Int       @map("system_id")
+  normativeDocumentId       Int       @id @map("normative_document_id")
+  normativeDocumentDate     DateTime? @map("normative_document_date") @db.Timestamp(6)
+  normativeDocumentNumber   String?   @map("normative_document_number") @db.Char(100)
+  approvedBy                String?   @map("approved_by") @db.VarChar(200)
+  documentBasicPoints       String?   @map("document_basic_points") @db.VarChar(255)
+  onlyYearIsKnown           Int?      @map("only_year_is_known")
+  docKindId                 Int?      @map("doc_kind_id")
+  scanDocumentId            Int?      @map("scan_document_id")
+  textDocumentId            Int?      @map("text_document_id")
+  userId                    Int?      @map("user_id")
+  creationDate              DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser            Int?      @map("last_change_user")
+  lastChangeDate            DateTime? @map("last_change_date") @db.Timestamp(6)
+
+  system                    InformationSystem @relation(fields: [systemId], references: [systemId])
+  documentKind              DocumentKind?     @relation(fields: [docKindId], references: [docKindId])
+  
+  @@map("intgr3_managing_documents")
+}
+
+// Типы документов
+model DocumentKind {
+  docKindId         Int       @id @map("doc_kind_id")
+  documentTypeName  String?   @map("document_type_name") @db.VarChar(100)
+
+  documents         ManagingDocument[]
+  
+  @@map("c1_doc_kind")
+}
+
+// Полнотекстовые документы
+model DocumentFullText {
+  documentId        Int       @id @map("document_id")
+  fileName          String?   @map("file_name") @db.VarChar(100)
+  fileExtension     String?   @map("file_extension") @db.VarChar(20)
+  fileBody          Bytes?    @map("file_body")
+  fileSize          Int?      @map("file_size")
+  userId            Int?      @map("user_id")
+  creationDate      DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser    Int?      @map("last_change_user")
+  lastChangeDate    DateTime? @map("last_change_date") @db.Timestamp(6)
+  
+  @@map("intgr4_document_full_text")
+}
+
+// Руководства пользователя
+model UserGuide {
+  versionId           Int       @id @map("version_id")
+  yearPublished       Int?      @map("year_published")
+  authorsList         String?   @map("authors_list") @db.VarChar(1000)
+  title               String?   @db.VarChar(20)
+  publisher           String?   @db.VarChar(255)
+  fulltextDocumentId  Int?      @map("fulltext_document_id")
+  userId              Int?      @map("user_id")
+  creationDate        DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser      Int?      @map("last_change_user")
+  lastChangeDate      DateTime? @map("last_change_date") @db.Timestamp(6)
+
+  version             SystemVersion @relation(fields: [versionId], references: [versionId])
+  
+  @@map("intgr_2_1_user_guides")
+}
+
+// Потоки данных между системами
+model DataStream {
+  versionId             Int       @map("version_id")
+  recipientVersionId    Int?      @map("recipient_version_id")
+  streamId              Int       @id @map("stream_id")
+  dataStreamDescription String?   @map("data_stream_description") @db.VarChar(1000)
+  userId                Int?      @map("user_id")
+  creationDate          DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser        Int?      @map("last_change_user")
+  lastChangeDate        DateTime? @map("last_change_date") @db.Timestamp(6)
+  shareDatabase         Int?      @map("share_database")
+
+  sourceVersion         SystemVersion  @relation("SourceVersion", fields: [versionId], references: [versionId])
+  recipientVersion      SystemVersion? @relation("RecipientVersion", fields: [recipientVersionId], references: [versionId])
+  exchangeFormats       ExchangeFormat[]
+  
+  @@map("intgr_2_2_data_streams")
+}
+
+// Форматы обмена
+model ExchangeFormat {
+  streamId                    Int       @map("stream_id")
+  exchangeFormatVersion       Int       @map("exchange_format_version")
+  versionId                   Int       @map("version_id")
+  formatDescriptionDocumentId Int?      @map("format_description_document_id")
+  formatSampleDocumentId      Int?      @map("format_sample_document_id")
+  userId                      Int?      @map("user_id")
+  creationDate                DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser              Int?      @map("last_change_user")
+  lastChangeDate              DateTime? @map("last_change_date") @db.Timestamp(6)
+
+  dataStream                  DataStream     @relation(fields: [streamId], references: [streamId])
+  version                     SystemVersion  @relation(fields: [versionId], references: [versionId])
+  
+  @@id([streamId, exchangeFormatVersion, versionId])
+  @@map("intgr_2_2_1_exchange_formats")
+}
+
+// Схемы данных
+model Schema {
+  versionId                    Int       @map("version_id")
+  dataSchemaVersion            Int       @map("data_schema_version")
+  changesInTheCurrentVersion   String?   @map("changes_in_the_current_version") @db.VarChar(1000)
+  dataSchemaDocumentId         Int?      @map("data_schema_document_id")
+  userId                       Int?      @map("user_id")
+  creationDate                 DateTime? @map("creation_date") @db.Timestamp(6)
+  lastChangeUser               Int?      @map("last_change_user")
+  lastChangeDate               DateTime? @map("last_change_date") @db.Timestamp(6)
+
+  version                      SystemVersion @relation(fields: [versionId], references: [versionId])
+  
+  @@id([versionId, dataSchemaVersion])
+  @@map("intgr_2_3_schemas")
+}

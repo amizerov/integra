@@ -1,36 +1,150 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# АИС "Интеграция" - Система регистрации АИС МГУ
 
-## Getting Started
+Современная веб-версия системы для регистрации и управления автоматизированными информационными системами МГУ имени М.В.Ломоносова.
 
-First, run the development server:
+## 🚀 Технологический стек
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16** (App Router) - React фреймворк  
+- **React 19** - UI библиотека
+- **TypeScript** - типизация
+- **Tailwind CSS 4** - стилизация
+- **PostgreSQL** - база данных
+- **Prisma ORM** - работа с БД
+- **NextAuth.js v5** - аутентификация
+- **TanStack Query** - управление состоянием сервера
+- **Zod** - валидация данных
+- **React Hook Form** - управление формами
+
+## ✨ Особенности архитектуры
+
+### ⚡ Server Actions вместо API Routes
+Проект использует **современный подход Next.js 15+** с Server Actions вместо традиционных API routes:
+
+**Преимущества:**
+- ✅ Меньше кода и boilerplate
+- ✅ Автоматическая типобезопасность
+- ✅ Прямой доступ к БД из Server Components
+- ✅ Встроенная обработка мутаций
+- ✅ Автоматическая ревалидация кэша
+
+**Структура:**
+```
+lib/actions/
+  ├── systems.ts      # CRUD для систем и версий
+  ├── connections.ts  # Работа со связями
+  └── auth.ts         # Регистрация и верификация
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 🔄 Множественные версии систем
+Система поддерживает одновременную работу разных версий:
+- **WEB** - веб-версии
+- **DESKTOP** - десктопные версии  
+- **ONE_C** - версии на 1С (с отдельной БД, обычно не совместимы)
+- **MOBILE** - мобильные версии
+- **HYBRID** - гибридные решения
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Разные версии могут быть активны одновременно и иметь разные СУБД.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📦 Установка
 
-## Learn More
+### 1. Клонировать репозиторий
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+git clone <repository-url>
+cd integra
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2. Установить зависимости
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+npm install
+```
 
-## Deploy on Vercel
+### 3. Настроить переменные окружения
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Скопировать `.env.example` в `.env`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```powershell
+copy .env.example .env
+```
+
+Заполнить переменные в `.env`
+
+### 4. Настроить базу данных
+
+```powershell
+# Создать миграции
+npm run db:migrate
+
+# Сгенерировать Prisma Client  
+npm run db:generate
+```
+
+### 5. Запустить проект
+
+```powershell
+# Режим разработки
+npm run dev
+
+# Продакшн
+npm run build
+npm start
+```
+
+Проект: http://localhost:3000
+
+## 🎯 Server Actions - примеры
+
+### Server Component (получение данных)
+```typescript
+// app/systems/page.tsx
+import { getSystems } from '@/lib/actions/systems'
+
+export default async function SystemsPage() {
+  const { systems } = await getSystems()
+  return <div>...</div>
+}
+```
+
+### Client Component (мутации)
+```typescript
+'use client'
+import { createSystem } from '@/lib/actions/systems'
+
+export function SystemForm() {
+  async function handleSubmit(formData: FormData) {
+    const result = await createSystem(formData)
+    // Автоматическая ревалидация!
+  }
+  return <form action={handleSubmit}>...</form>
+}
+```
+
+## 📁 Структура
+
+```
+app/
+  (auth)/              # Аутентификация
+  (authenticated)/     # Защищенные страницы  
+  api/auth/            # NextAuth endpoint
+lib/
+  actions/             # ⚡ Server Actions
+components/
+  layout/              # Layout компоненты
+  ui/                  # UI компоненты
+prisma/
+  schema.prisma        # Схема БД
+```
+
+## 🌐 Скрипты
+
+```bash
+npm run dev          # Development
+npm run build        # Production build
+npm run db:migrate   # Миграции БД
+npm run db:studio    # Prisma Studio
+```
+
+---
+
+© 2025 МГУ имени М.В.Ломоносова
