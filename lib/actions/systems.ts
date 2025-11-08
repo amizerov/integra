@@ -12,6 +12,8 @@ export async function getSystems() {
         }
       },
       documents: true,
+      creator: true,
+      modifier: true,
     },
     orderBy: {
       creationDate: 'desc'
@@ -29,6 +31,10 @@ export async function getSystems() {
         systemShortName: system.systemShortName || '',
         systemName: system.systemName || '',
         hasPersonalData: system.hasPersonalData,
+        createdBy: system.creator?.fio || 'Неизвестно',
+        createdAt: system.creationDate,
+        modifiedBy: system.modifier?.fio || 'Неизвестно',
+        modifiedAt: system.lastChangeDate,
         _count: {
           versions: system.versions.length,
           documents: system.documents.length,

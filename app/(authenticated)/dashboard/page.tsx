@@ -6,13 +6,6 @@ export default async function DashboardPage() {
   const stats = await getDashboardStats()
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Главная</h1>
-        <p className="text-muted-foreground">
-          Обзор всех автоматизированных информационных систем МГУ
-        </p>
-      </div>
-
       {/* Статистика */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>

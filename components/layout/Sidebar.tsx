@@ -10,8 +10,10 @@ import {
   FiFileText, 
   FiSettings,
   FiUsers,
-  FiList
+  FiList,
+  FiX
 } from 'react-icons/fi'
+import { Button } from '@/components/ui/button'
 
 const navigation = [
   { name: 'Главная', href: '/dashboard', icon: FiHome },
@@ -22,52 +24,82 @@ const navigation = [
   { name: 'Администрирование', href: '/admin', icon: FiSettings, adminOnly: true },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex flex-col w-64 bg-card border-r border-border">
-      {/* Logo */}
-      <div className="flex items-center h-16 px-6 border-b border-border">
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-[var(--mgu-red)] rounded-md flex items-center justify-center">
-            <span className="text-white font-bold text-sm">МГУ</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-sm">АИС Интеграция</span>
-            <span className="text-xs text-muted-foreground">Версия 1.2</span>
-          </div>
-        </Link>
-      </div>
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'flex items-center px-4 py-2.5 text-sm font-medium rounded-md transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
-            >
-              <item.icon className="mr-3 h-5 w-5" />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed md:static inset-y-0 left-0 z-50 flex flex-col w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        {/* Logo */}
+        <div className="flex items-center h-16 px-6 border-b border-border">
+          <Link href="/dashboard" className="flex items-center space-x-2 flex-1">
+            <div className="w-8 h-8 bg-[var(--mgu-red)] rounded-md flex items-center justify-center">
+              <span className="text-white font-bold text-sm">МГУ</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm">АИС Интеграция</span>
+              <span className="text-xs text-muted-foreground">Версия 1.2</span>
+            </div>
+          </Link>
+          
+          {/* Close button for mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={onClose}
+          >
+            <FiX className="h-5 w-5" />
+          </Button>
+        </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border">
-        <div className="text-xs text-muted-foreground text-center">
-          © 2025 МГУ имени М.В.Ломоносова
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  'flex items-center px-4 py-2.5 text-sm font-medium rounded-md transition-colors',
+                  isActive
+                    ? 'bg-slate-600/40 dark:bg-slate-700/40 text-foreground'
+                    : 'text-muted-foreground hover:bg-slate-700/20 dark:hover:bg-slate-700/20 hover:text-foreground'
+                )}
+              >
+                <item.icon className="mr-3 h-5 w-5" />
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-border">
+          <div className="text-xs text-muted-foreground text-center">
+            © 2025 МГУ имени М.В.Ломоносова
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -18,13 +18,6 @@ export default async function ClassifiersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Классификаторы</h1>
-        <p className="text-muted-foreground">
-          Управление справочниками и классификаторами системы
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Левая панель - список классификаторов */}
         <Card className="lg:col-span-1">

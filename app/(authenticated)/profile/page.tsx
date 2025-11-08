@@ -16,13 +16,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Профиль</h1>
-        <p className="text-muted-foreground">
-          Управление личной информацией и настройками
-        </p>
-      </div>
-
       {/* Основная информация */}
       <Card>
         <CardHeader>

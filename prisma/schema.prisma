@@ -25,6 +25,8 @@ model AllowedUser {
 
   createdVersions  SystemVersion[] @relation("VersionCreator")
   modifiedVersions SystemVersion[] @relation("VersionModifier")
+  createdSystems   InformationSystem[] @relation("SystemCreator")
+  modifiedSystems  InformationSystem[] @relation("SystemModifier")
 
   @@map("allowed_users")
 }
@@ -42,6 +44,8 @@ model InformationSystem {
 
   versions         SystemVersion[]
   documents        ManagingDocument[]
+  creator          AllowedUser? @relation("SystemCreator", fields: [userId], references: [userId])
+  modifier         AllowedUser? @relation("SystemModifier", fields: [lastChangeUser], references: [userId])
   
   @@map("intgr1_information_systems")
 }

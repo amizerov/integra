@@ -47,13 +47,6 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Администрирование</h1>
-        <p className="text-muted-foreground">
-          Управление системой и пользователями
-        </p>
-      </div>
-
       {/* Общая статистика */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
