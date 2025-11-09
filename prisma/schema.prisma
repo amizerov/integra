@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,197 +7,211 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Пользователи системы
 model AllowedUser {
-  userId         Int       @id @map("user_id")
-  userLevel      Int?      @map("user_level")
-  fio            String?   @db.VarChar(90)
-  eMail          String?   @map("e_mail") @db.VarChar(50)
-  phoneNumber    String?   @map("phone_number") @db.VarChar(20)
-  userPassword   String?   @map("user_password") @db.VarChar(100)
-  userLogin      String?   @map("user_login") @db.VarChar(30)
-  passwordHash   String?   @map("password_hash") @db.VarChar(255)
-  isActive       Int?      @map("is_active")
-  comment        String?   @db.VarChar(255)
-
-  createdVersions  SystemVersion[] @relation("VersionCreator")
-  modifiedVersions SystemVersion[] @relation("VersionModifier")
-  createdSystems   InformationSystem[] @relation("SystemCreator")
-  modifiedSystems  InformationSystem[] @relation("SystemModifier")
+  userId                       Int                 @id(map: "xpk") @map("user_id")
+  userLevel                    Int?                @map("user_level")
+  fio                          String?             @db.VarChar(90)
+  eMail                        String?             @map("e_mail") @db.VarChar(50)
+  phoneNumber                  String?             @map("phone_number") @db.VarChar(20)
+  userPassword                 String?             @map("user_password") @db.VarChar(100)
+  userLogin                    String?             @map("user_login") @db.VarChar(30)
+  passwordHash                 String?             @map("password_hash") @db.VarChar(255)
+  isActive                     Int?                @map("is_active")
+  comment                      String?             @db.VarChar(255)
+  createdSystems               InformationSystem[] @relation("SystemCreator")
+  createdVersions              SystemVersion[]     @relation("VersionCreator")
+  intgr3_managing_documents    ManagingDocument[]
+  intgr4_document_full_text    DocumentFullText[]
+  intgr_2_1_user_guides        UserGuide[]
+  intgr_2_2_1_exchange_formats ExchangeFormat[]
+  intgr_2_2_data_streams       DataStream[]
+  intgr_2_3_schemas            Schema[]
+  networkLayouts               NetworkLayout[]
 
   @@map("allowed_users")
 }
 
-// АИС - Автоматизированные Информационные Системы
 model InformationSystem {
-  systemId         Int       @id @map("system_id")
-  systemShortName  String?   @map("system_short_name") @db.VarChar(64)
-  systemName       String?   @map("system_name") @db.VarChar(255)
-  hasPersonalData  Int?      @map("has_personal_data")
-  userId           Int?      @map("user_id")
-  creationDate     DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser   Int?      @map("last_change_user")
-  lastChangeDate   DateTime? @map("last_change_date") @db.Timestamp(6)
+  systemId        Int                @id @map("system_id")
+  systemShortName String?            @map("system_short_name") @db.VarChar(64)
+  systemName      String?            @map("system_name") @db.VarChar(255)
+  hasPersonalData Int?               @map("has_personal_data")
+  userId          Int?               @map("user_id")
+  creationDate    DateTime?          @map("creation_date") @db.Timestamp(6)
+  lastChangeUser  Int?               @map("last_change_user")
+  lastChangeDate  DateTime?          @map("last_change_date") @db.Timestamp(6)
+  creator         AllowedUser?       @relation("SystemCreator", fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_26")
+  versions        SystemVersion[]
+  documents       ManagingDocument[]
 
-  versions         SystemVersion[]
-  documents        ManagingDocument[]
-  creator          AllowedUser? @relation("SystemCreator", fields: [userId], references: [userId])
-  modifier         AllowedUser? @relation("SystemModifier", fields: [lastChangeUser], references: [userId])
-  
   @@map("intgr1_information_systems")
 }
 
-// Версии систем
 model SystemVersion {
-  systemId                  Int       @map("system_id")
-  versionDevelopmentYear    Int?      @map("version_development_year")
-  productionStartYear       Int?      @map("production_start_year")
-  versionId                 Int       @id @map("version_id")
-  endOfUsageYear            Int?      @map("end_of_usage_year")
-  developingOrganization    String?   @map("developing_organization") @db.VarChar(255)
-  developingUnit            String?   @map("developing_unit") @db.VarChar(255)
-  versionAuthors            String?   @map("version_authors") @db.VarChar(1000)
-  versionCode               String?   @map("version_code") @db.VarChar(50)
-  versionComment            String?   @map("version_comment") @db.VarChar(1000)
-  operatingUnit             String?   @map("operating_unit") @db.VarChar(255)
-  technicalSupportUnit      String?   @map("technical_suppport_unit") @db.VarChar(255)
-  operatingPlace            String?   @map("operating_place") @db.VarChar(1000)
-  programmingTools          String?   @map("programming_tools") @db.VarChar(1000)
-  operatingEnvironment      String?   @map("operating_environment") @db.VarChar(1000)
-  userId                    Int?      @map("user_id")
-  creationDate              DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser            Int?      @map("last_change_user")
-  lastChangeDate            DateTime? @map("last_change_date") @db.Timestamp(6)
+  systemId               Int               @map("system_id")
+  versionDevelopmentYear Int?              @map("version_development_year")
+  productionStartYear    Int?              @map("production_start_year")
+  versionId              Int               @id(map: "xpkintgr2") @map("version_id")
+  endOfUsageYear         Int?              @map("end_of_usage_year")
+  developingOrganization String?           @map("developing_organization") @db.VarChar(255)
+  developingUnit         String?           @map("developing_unit") @db.VarChar(255)
+  versionAuthors         String?           @map("version_authors") @db.VarChar(1000)
+  versionCode            String?           @map("version_code") @db.VarChar(50)
+  versionComment         String?           @map("version_comment") @db.VarChar(1000)
+  operatingUnit          String?           @map("operating_unit") @db.VarChar(255)
+  technicalSupportUnit   String?           @map("technical_suppport_unit") @db.VarChar(255)
+  operatingPlace         String?           @map("operating_place") @db.VarChar(1000)
+  programmingTools       String?           @map("programming_tools") @db.VarChar(1000)
+  operatingEnvironment   String?           @map("operating_environment") @db.VarChar(1000)
+  userId                 Int?              @map("user_id")
+  creationDate           DateTime?         @map("creation_date") @db.Timestamp(6)
+  lastChangeUser         Int?              @map("last_change_user")
+  lastChangeDate         DateTime?         @map("last_change_date") @db.Timestamp(6)
+  system                 InformationSystem @relation(fields: [systemId], references: [systemId], onDelete: NoAction, onUpdate: NoAction, map: "r_1")
+  creator                AllowedUser?      @relation("VersionCreator", fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_28")
+  userGuides             UserGuide?
+  dataStreamsSource      DataStream[]      @relation("SourceVersion")
+  schemas                Schema[]
 
-  system                    InformationSystem @relation(fields: [systemId], references: [systemId])
-  creator                   AllowedUser? @relation("VersionCreator", fields: [userId], references: [userId])
-  modifier                  AllowedUser? @relation("VersionModifier", fields: [lastChangeUser], references: [userId])
-  userGuides                UserGuide[]
-  schemas                   Schema[]
-  dataStreamsSource         DataStream[] @relation("SourceVersion")
-  dataStreamsRecipient      DataStream[] @relation("RecipientVersion")
-  exchangeFormats           ExchangeFormat[]
-  
   @@map("intgr2_system_versions")
 }
 
-// Нормативные документы
 model ManagingDocument {
-  systemId                  Int       @map("system_id")
-  normativeDocumentId       Int       @id @map("normative_document_id")
-  normativeDocumentDate     DateTime? @map("normative_document_date") @db.Timestamp(6)
-  normativeDocumentNumber   String?   @map("normative_document_number") @db.Char(100)
-  approvedBy                String?   @map("approved_by") @db.VarChar(200)
-  documentBasicPoints       String?   @map("document_basic_points") @db.VarChar(255)
-  onlyYearIsKnown           Int?      @map("only_year_is_known")
-  docKindId                 Int?      @map("doc_kind_id")
-  scanDocumentId            Int?      @map("scan_document_id")
-  textDocumentId            Int?      @map("text_document_id")
-  userId                    Int?      @map("user_id")
-  creationDate              DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser            Int?      @map("last_change_user")
-  lastChangeDate            DateTime? @map("last_change_date") @db.Timestamp(6)
+  systemId                                                                                        Int               @map("system_id")
+  normativeDocumentId                                                                             Int               @map("normative_document_id")
+  normativeDocumentDate                                                                           DateTime?         @map("normative_document_date") @db.Timestamp(6)
+  normativeDocumentNumber                                                                         String?           @map("normative_document_number") @db.Char(100)
+  approvedBy                                                                                      String?           @map("approved_by") @db.VarChar(200)
+  documentBasicPoints                                                                             String?           @map("document_basic_points") @db.VarChar(255)
+  onlyYearIsKnown                                                                                 Int?              @map("only_year_is_known")
+  docKindId                                                                                       Int?              @map("doc_kind_id")
+  scanDocumentId                                                                                  Int?              @map("scan_document_id")
+  textDocumentId                                                                                  Int?              @map("text_document_id")
+  userId                                                                                          Int?              @map("user_id")
+  creationDate                                                                                    DateTime?         @map("creation_date") @db.Timestamp(6)
+  lastChangeUser                                                                                  Int?              @map("last_change_user")
+  lastChangeDate                                                                                  DateTime?         @map("last_change_date") @db.Timestamp(6)
+  system                                                                                          InformationSystem @relation(fields: [systemId], references: [systemId], onDelete: NoAction, onUpdate: NoAction, map: "r_2")
+  intgr4_document_full_text_intgr3_managing_documents_scan_document_idTointgr4_document_full_text DocumentFullText? @relation("intgr3_managing_documents_scan_document_idTointgr4_document_full_text", fields: [scanDocumentId], references: [documentId], onDelete: NoAction, onUpdate: NoAction, map: "r_21")
+  intgr4_document_full_text_intgr3_managing_documents_text_document_idTointgr4_document_full_text DocumentFullText? @relation("intgr3_managing_documents_text_document_idTointgr4_document_full_text", fields: [textDocumentId], references: [documentId], onDelete: NoAction, onUpdate: NoAction, map: "r_23")
+  allowed_users                                                                                   AllowedUser?      @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_27")
+  documentKind                                                                                    DocumentKind?     @relation(fields: [docKindId], references: [docKindId], onDelete: NoAction, onUpdate: NoAction, map: "r_8")
 
-  system                    InformationSystem @relation(fields: [systemId], references: [systemId])
-  documentKind              DocumentKind?     @relation(fields: [docKindId], references: [docKindId])
-  
+  @@id([systemId, normativeDocumentId], map: "xpkintgr3")
   @@map("intgr3_managing_documents")
 }
 
-// Типы документов
 model DocumentKind {
-  docKindId         Int       @id @map("doc_kind_id")
-  documentTypeName  String?   @map("document_type_name") @db.VarChar(100)
+  docKindId        Int                @id @map("doc_kind_id")
+  documentTypeName String?            @map("document_type_name") @db.VarChar(100)
+  documents        ManagingDocument[]
 
-  documents         ManagingDocument[]
-  
   @@map("c1_doc_kind")
 }
 
-// Полнотекстовые документы
 model DocumentFullText {
-  documentId        Int       @id @map("document_id")
-  fileName          String?   @map("file_name") @db.VarChar(100)
-  fileExtension     String?   @map("file_extension") @db.VarChar(20)
-  fileBody          Bytes?    @map("file_body")
-  fileSize          Int?      @map("file_size")
-  userId            Int?      @map("user_id")
-  creationDate      DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser    Int?      @map("last_change_user")
-  lastChangeDate    DateTime? @map("last_change_date") @db.Timestamp(6)
-  
+  documentId                                                                                                          Int                @id(map: "xpkintgr4") @map("document_id")
+  fileName                                                                                                            String?            @map("file_name") @db.VarChar(100)
+  fileExtension                                                                                                       String?            @map("file_extension") @db.VarChar(20)
+  fileBody                                                                                                            Bytes?             @map("file_body")
+  fileSize                                                                                                            Int?               @map("file_size")
+  userId                                                                                                              Int?               @map("user_id")
+  creationDate                                                                                                        DateTime?          @map("creation_date") @db.Timestamp(6)
+  lastChangeUser                                                                                                      Int?               @map("last_change_user")
+  lastChangeDate                                                                                                      DateTime?          @map("last_change_date") @db.Timestamp(6)
+  intgr3_managing_documents_intgr3_managing_documents_scan_document_idTointgr4_document_full_text                     ManagingDocument[] @relation("intgr3_managing_documents_scan_document_idTointgr4_document_full_text")
+  intgr3_managing_documents_intgr3_managing_documents_text_document_idTointgr4_document_full_text                     ManagingDocument[] @relation("intgr3_managing_documents_text_document_idTointgr4_document_full_text")
+  allowed_users                                                                                                       AllowedUser?       @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_31")
+  intgr_2_1_user_guides                                                                                               UserGuide[]
+  intgr_2_2_1_exchange_formats_intgr_2_2_1_exchange_formats_format_description_document_idTointgr4_document_full_text ExchangeFormat[]   @relation("intgr_2_2_1_exchange_formats_format_description_document_idTointgr4_document_full_text")
+  intgr_2_2_1_exchange_formats_intgr_2_2_1_exchange_formats_format_sample_document_idTointgr4_document_full_text      ExchangeFormat[]   @relation("intgr_2_2_1_exchange_formats_format_sample_document_idTointgr4_document_full_text")
+  intgr_2_3_schemas                                                                                                   Schema[]
+
   @@map("intgr4_document_full_text")
 }
 
-// Руководства пользователя
 model UserGuide {
-  versionId           Int       @id @map("version_id")
-  yearPublished       Int?      @map("year_published")
-  authorsList         String?   @map("authors_list") @db.VarChar(1000)
-  title               String?   @db.VarChar(20)
-  publisher           String?   @db.VarChar(255)
-  fulltextDocumentId  Int?      @map("fulltext_document_id")
-  userId              Int?      @map("user_id")
-  creationDate        DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser      Int?      @map("last_change_user")
-  lastChangeDate      DateTime? @map("last_change_date") @db.Timestamp(6)
+  versionId                 Int               @id(map: "xpkintrg_2_1") @map("version_id")
+  yearPublished             Int?              @map("year_published")
+  authorsList               String?           @map("authors_list") @db.VarChar(1000)
+  title                     String?           @db.VarChar(20)
+  publisher                 String?           @db.VarChar(255)
+  fulltextDocumentId        Int?              @map("fulltext_document_id")
+  userId                    Int?              @map("user_id")
+  creationDate              DateTime?         @map("creation_date") @db.Timestamp(6)
+  lastChangeUser            Int?              @map("last_change_user")
+  lastChangeDate            DateTime?         @map("last_change_date") @db.Timestamp(6)
+  intgr4_document_full_text DocumentFullText? @relation(fields: [fulltextDocumentId], references: [documentId], onDelete: NoAction, onUpdate: NoAction, map: "r_25")
+  allowed_users             AllowedUser?      @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_33")
+  version                   SystemVersion     @relation(fields: [versionId], references: [versionId], onDelete: NoAction, onUpdate: NoAction, map: "r_4")
 
-  version             SystemVersion @relation(fields: [versionId], references: [versionId])
-  
   @@map("intgr_2_1_user_guides")
 }
 
-// Потоки данных между системами
 model DataStream {
-  versionId             Int       @map("version_id")
-  recipientVersionId    Int?      @map("recipient_version_id")
-  streamId              Int       @id @map("stream_id")
-  dataStreamDescription String?   @map("data_stream_description") @db.VarChar(1000)
-  userId                Int?      @map("user_id")
-  creationDate          DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser        Int?      @map("last_change_user")
-  lastChangeDate        DateTime? @map("last_change_date") @db.Timestamp(6)
-  shareDatabase         Int?      @map("share_database")
+  versionId                    Int              @map("version_id")
+  recipientVersionId           Int?             @map("recipient_version_id")
+  streamId                     Int              @map("stream_id")
+  dataStreamDescription        String?          @map("data_stream_description") @db.VarChar(1000)
+  userId                       Int?             @map("user_id")
+  creationDate                 DateTime?        @map("creation_date") @db.Timestamp(6)
+  lastChangeUser               Int?             @map("last_change_user")
+  lastChangeDate               DateTime?        @map("last_change_date") @db.Timestamp(6)
+  shareDatabase                Int?             @map("share_database")
+  intgr_2_2_1_exchange_formats ExchangeFormat[]
+  allowed_users                AllowedUser?     @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_29")
+  sourceVersion                SystemVersion    @relation("SourceVersion", fields: [versionId], references: [versionId], onDelete: NoAction, onUpdate: NoAction, map: "r_3")
 
-  sourceVersion         SystemVersion  @relation("SourceVersion", fields: [versionId], references: [versionId])
-  recipientVersion      SystemVersion? @relation("RecipientVersion", fields: [recipientVersionId], references: [versionId])
-  exchangeFormats       ExchangeFormat[]
-  
+  @@id([streamId, versionId], map: "xpkintgr_2_2")
   @@map("intgr_2_2_data_streams")
 }
 
-// Форматы обмена
 model ExchangeFormat {
-  streamId                    Int       @map("stream_id")
-  exchangeFormatVersion       Int       @map("exchange_format_version")
-  versionId                   Int       @map("version_id")
-  formatDescriptionDocumentId Int?      @map("format_description_document_id")
-  formatSampleDocumentId      Int?      @map("format_sample_document_id")
-  userId                      Int?      @map("user_id")
-  creationDate                DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser              Int?      @map("last_change_user")
-  lastChangeDate              DateTime? @map("last_change_date") @db.Timestamp(6)
+  streamId                                                                                                         Int               @map("stream_id")
+  exchangeFormatVersion                                                                                            Int               @map("exchange_format_version")
+  versionId                                                                                                        Int               @map("version_id")
+  formatDescriptionDocumentId                                                                                      Int?              @map("format_description_document_id")
+  formatSampleDocumentId                                                                                           Int?              @map("format_sample_document_id")
+  userId                                                                                                           Int?              @map("user_id")
+  creationDate                                                                                                     DateTime?         @map("creation_date") @db.Timestamp(6)
+  lastChangeUser                                                                                                   Int?              @map("last_change_user")
+  lastChangeDate                                                                                                   DateTime?         @map("last_change_date") @db.Timestamp(6)
+  intgr4_document_full_text_intgr_2_2_1_exchange_formats_format_description_document_idTointgr4_document_full_text DocumentFullText? @relation("intgr_2_2_1_exchange_formats_format_description_document_idTointgr4_document_full_text", fields: [formatDescriptionDocumentId], references: [documentId], onDelete: NoAction, onUpdate: NoAction, map: "r_17")
+  intgr4_document_full_text_intgr_2_2_1_exchange_formats_format_sample_document_idTointgr4_document_full_text      DocumentFullText? @relation("intgr_2_2_1_exchange_formats_format_sample_document_idTointgr4_document_full_text", fields: [formatSampleDocumentId], references: [documentId], onDelete: NoAction, onUpdate: NoAction, map: "r_18")
+  allowed_users                                                                                                    AllowedUser?      @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_30")
+  intgr_2_2_data_streams                                                                                           DataStream        @relation(fields: [streamId, versionId], references: [streamId, versionId], onDelete: NoAction, onUpdate: NoAction, map: "r_6")
 
-  dataStream                  DataStream     @relation(fields: [streamId], references: [streamId])
-  version                     SystemVersion  @relation(fields: [versionId], references: [versionId])
-  
-  @@id([streamId, exchangeFormatVersion, versionId])
+  @@id([streamId, exchangeFormatVersion, versionId], map: "xpkintgr_2_2_1")
   @@map("intgr_2_2_1_exchange_formats")
 }
 
-// Схемы данных
 model Schema {
-  versionId                    Int       @map("version_id")
-  dataSchemaVersion            Int       @map("data_schema_version")
-  changesInTheCurrentVersion   String?   @map("changes_in_the_current_version") @db.VarChar(1000)
-  dataSchemaDocumentId         Int?      @map("data_schema_document_id")
-  userId                       Int?      @map("user_id")
-  creationDate                 DateTime? @map("creation_date") @db.Timestamp(6)
-  lastChangeUser               Int?      @map("last_change_user")
-  lastChangeDate               DateTime? @map("last_change_date") @db.Timestamp(6)
+  versionId                  Int               @map("version_id")
+  dataSchemaVersion          Int               @map("data_schema_version")
+  changesInTheCurrentVersion String?           @map("changes_in_the_current_version") @db.VarChar(1000)
+  dataSchemaDocumentId       Int?              @map("data_schema_document_id")
+  userId                     Int?              @map("user_id")
+  creationDate               DateTime?         @map("creation_date") @db.Timestamp(6)
+  lastChangeUser             Int?              @map("last_change_user")
+  lastChangeDate             DateTime?         @map("last_change_date") @db.Timestamp(6)
+  intgr4_document_full_text  DocumentFullText? @relation(fields: [dataSchemaDocumentId], references: [documentId], onDelete: NoAction, onUpdate: NoAction, map: "r_15")
+  allowed_users              AllowedUser?      @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_32")
+  version                    SystemVersion     @relation(fields: [versionId], references: [versionId], onDelete: NoAction, onUpdate: NoAction, map: "r_7")
 
-  version                      SystemVersion @relation(fields: [versionId], references: [versionId])
-  
-  @@id([versionId, dataSchemaVersion])
+  @@id([versionId, dataSchemaVersion], map: "xpkintgr_2_3")
   @@map("intgr_2_3_schemas")
+}
+
+model NetworkLayout {
+  id          Int         @id @default(autoincrement())
+  name        String      @db.VarChar(255)
+  description String?
+  userId      Int         @map("user_id")
+  layoutData  String      @map("layout_data")
+  isPublic    Boolean     @default(false) @map("is_public")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamp(6)
+  user        AllowedUser @relation(fields: [userId], references: [userId])
+
+  @@map("network_layouts")
 }

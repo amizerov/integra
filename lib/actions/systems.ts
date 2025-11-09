@@ -8,12 +8,10 @@ export async function getSystems() {
       versions: {
         include: {
           dataStreamsSource: true,
-          dataStreamsRecipient: true,
         }
       },
       documents: true,
       creator: true,
-      modifier: true,
     },
     orderBy: {
       creationDate: 'desc'
@@ -98,11 +96,17 @@ export async function getDashboardStats() {
     totalSystems,
     totalVersions,
     totalConnections,
+    totalManagingDocuments,
+    totalFullTextDocuments,
+    totalUserGuides,
     recentSystems
   ] = await Promise.all([
     prisma.informationSystem.count(),
     prisma.systemVersion.count(),
     prisma.dataStream.count(),
+    prisma.managingDocument.count(),
+    prisma.documentFullText.count(),
+    prisma.userGuide.count(),
     prisma.informationSystem.findMany({
       take: 5,
       orderBy: { lastChangeDate: 'desc' },
@@ -121,6 +125,9 @@ export async function getDashboardStats() {
     totalVersions,
     activeVersions: totalVersions,
     totalConnections,
+    totalManagingDocuments,
+    totalFullTextDocuments,
+    totalUserGuides,
     systemsByPlatform: [],
     systemsByDatabase: [],
     recentSystems: recentSystems.map((s: any) => ({

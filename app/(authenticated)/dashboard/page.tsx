@@ -1,102 +1,120 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getDashboardStats } from '@/lib/actions/systems'
+import { getSystemsNetworkData } from '@/lib/actions/network'
 import { formatDate } from '@/lib/utils'
+import NetworkCanvas from '@/components/NetworkCanvas'
 
 export default async function DashboardPage() {
   const stats = await getDashboardStats()
+  const networkData = await getSystemsNetworkData()
   return (
     <div className="space-y-6">
-      {/* Статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Всего систем
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSystems}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.activeSystems} активных
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Версий систем
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalVersions}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.activeVersions} активных
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Связей данных
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalConnections}</div>
-            <p className="text-xs text-muted-foreground">
-              Межсистемных соединений
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Платформ
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.systemsByPlatform.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Типов платформ
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Последние изменения */}
+      {/* Карта связей версий систем */}
       <Card>
         <CardHeader>
-          <CardTitle>Последние изменения</CardTitle>
+          <CardTitle>Карта связей версий систем</CardTitle>
           <CardDescription>
-            Недавно обновленные системы и версии
+            Интерактивная схема потоков данных между версиями систем. Можно перемещать узлы для удобства просмотра.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {stats.recentSystems.length > 0 ? (
-              stats.recentSystems.map((system: any) => (
-                <div key={system.id} className="flex items-center">
-                  <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {system.systemName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Код: {system.systemCode}
-                    </p>
-                  </div>
-                  <div className="ml-auto text-sm text-muted-foreground">
-                    {formatDate(system.updatedAt)}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">Нет данных</p>
-            )}
-          </div>
+          <NetworkCanvas 
+            initialNodes={networkData.nodes} 
+            initialEdges={networkData.edges} 
+          />
         </CardContent>
       </Card>
+
+      {/* Две колонки: Статистика и Последние изменения */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Статистика */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Статистика</CardTitle>
+            <CardDescription>
+              Общие показатели системы
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Всего систем</p>
+                <p className="text-2xl font-bold">{stats.totalSystems}</p>
+                <p className="text-xs text-muted-foreground">{stats.activeSystems} активных</p>
+              </div>
+              
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Версий систем</p>
+                <p className="text-2xl font-bold">{stats.totalVersions}</p>
+                <p className="text-xs text-muted-foreground">{stats.activeVersions} активных</p>
+              </div>
+              
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Связей данных</p>
+                <p className="text-2xl font-bold">{stats.totalConnections}</p>
+                <p className="text-xs text-muted-foreground">Межсистемных соединений</p>
+              </div>
+              
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Платформ</p>
+                <p className="text-2xl font-bold">{stats.systemsByPlatform.length}</p>
+                <p className="text-xs text-muted-foreground">Типов платформ</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Управленческие документы</p>
+                <p className="text-2xl font-bold">{stats.totalManagingDocuments}</p>
+                <p className="text-xs text-muted-foreground">Нормативные документы</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Полнотекстовые документы</p>
+                <p className="text-2xl font-bold">{stats.totalFullTextDocuments}</p>
+                <p className="text-xs text-muted-foreground">Обычные документы</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Методички</p>
+                <p className="text-2xl font-bold">{stats.totalUserGuides}</p>
+                <p className="text-xs text-muted-foreground">Руководства пользователя</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Последние изменения */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Последние изменения</CardTitle>
+            <CardDescription>
+              Недавно обновленные системы и версии
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.recentSystems.length > 0 ? (
+                stats.recentSystems.map((system: any) => (
+                  <div key={system.id} className="flex items-center">
+                    <div className="ml-4 space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {system.systemName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Код: {system.systemCode}
+                      </p>
+                    </div>
+                    <div className="ml-auto text-sm text-muted-foreground">
+                      {formatDate(system.updatedAt)}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Нет данных</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Системы по платформам */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

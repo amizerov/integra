@@ -130,3 +130,82 @@ a, button, [role="button"] {
   animation: fadeIn 0.3s ease-out;
 }
 
+/* React Flow styles */
+.react-flow__node {
+  font-family: inherit;
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px hsl(var(--color-primary));
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--color-primary));
+  border: 2px solid hsl(var(--color-card));
+  border-radius: 50%;
+}
+
+.react-flow__handle-top {
+  top: 0;
+  transform: translate(-50%, -50%);
+}
+
+.react-flow__handle-bottom {
+  bottom: 0;
+  transform: translate(-50%, 50%);
+}
+
+.react-flow__handle-left {
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.react-flow__handle-right {
+  right: 0;
+  transform: translate(50%, -50%);
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--color-primary));
+  stroke-width: 3;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: hsl(var(--color-primary) / 0.8);
+  stroke-width: 3;
+}
+
+.react-flow__controls {
+  background: hsl(var(--color-card));
+  border: 1px solid hsl(var(--color-border));
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.react-flow__controls-button {
+  background: hsl(var(--color-card));
+  border-bottom: 1px solid hsl(var(--color-border));
+  color: hsl(var(--color-foreground));
+}
+
+.react-flow__controls-button:hover {
+  background: hsl(var(--color-accent));
+}
+
+.react-flow__minimap {
+  background: hsl(var(--color-card));
+  border: 1px solid hsl(var(--color-border));
+}
+
+.react-flow__attribution {
+  background: hsl(var(--color-card));
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  opacity: 0.6;
+}
