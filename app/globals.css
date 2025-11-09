@@ -1,87 +1,90 @@
 @import "tailwindcss";
 
+@plugin "tailwindcss-animate";
+
 @theme {
-  /* Цвета МГУ */
-  --color-mgu-red: #B31B1B;
-  --color-mgu-gold: #D4AF37;
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  --default-font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --default-font-feature-settings: normal;
+  --default-font-variation-settings: normal;
+  --default-mono-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Радиусы */
+  --radius: 0.5rem;
+
+  /* Цвета - Светлая тема (по умолчанию) */
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.13 0.028 261.692);
   
-  /* Светлая тема */
-  --color-background: 0 0% 100%;
-  --color-foreground: 222.2 84% 4.9%;
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.13 0.028 261.692);
   
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 222.2 84% 4.9%;
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.13 0.028 261.692);
   
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 222.2 84% 4.9%;
+  --color-primary: oklch(0.55 0.1 245);
+  --color-primary-foreground: oklch(0.985 0.002 247.839);
   
-  --color-primary: 221.2 83.2% 53.3%;
-  --color-primary-foreground: 210 40% 98%;
+  --color-secondary: oklch(0.967 0.003 264.542);
+  --color-secondary-foreground: oklch(0.21 0.034 264.665);
   
-  --color-secondary: 210 40% 96.1%;
-  --color-secondary-foreground: 222.2 47.4% 11.2%;
+  --color-muted: oklch(0.967 0.003 264.542);
+  --color-muted-foreground: oklch(0.551 0.027 264.364);
   
-  --color-muted: 210 40% 96.1%;
-  --color-muted-foreground: 215.4 16.3% 46.9%;
+  --color-accent: oklch(0.967 0.003 264.542);
+  --color-accent-foreground: oklch(0.21 0.034 264.665);
   
-  --color-accent: 210 40% 96.1%;
-  --color-accent-foreground: 222.2 47.4% 11.2%;
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0.002 247.839);
   
-  --color-destructive: 0 84.2% 60.2%;
-  --color-destructive-foreground: 210 40% 98%;
-  
-  --color-border: 214.3 31.8% 91.4%;
-  --color-input: 214.3 31.8% 91.4%;
-  --color-ring: 221.2 83.2% 53.3%;
-  
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --color-border: oklch(0.928 0.006 264.531);
+  --color-input: oklch(0.928 0.006 264.531);
+  --color-ring: oklch(0.707 0.022 261.325);
 }
 
+/* Темная тема */
 .dark {
-  --color-background: 217 25% 14%;
-  --color-foreground: 210 40% 98%;
+  --color-background: oklch(0.13 0.028 261.692);
+  --color-foreground: oklch(0.985 0.002 247.839);
   
-  --color-card: 217 23% 17%;
-  --color-card-foreground: 210 40% 98%;
+  --color-card: oklch(0.21 0.034 264.665);
+  --color-card-foreground: oklch(0.985 0.002 247.839);
   
-  --color-popover: 217 23% 17%;
-  --color-popover-foreground: 210 40% 98%;
+  --color-popover: oklch(0.21 0.034 264.665);
+  --color-popover-foreground: oklch(0.985 0.002 247.839);
   
-  --color-primary: 217.2 91.2% 59.8%;
-  --color-primary-foreground: 222.2 47.4% 11.2%;
+  --color-primary: oklch(0.60 0.12 245);
+  --color-primary-foreground: oklch(0.985 0.002 247.839);
   
-  --color-secondary: 217 20% 23%;
-  --color-secondary-foreground: 210 40% 98%;
+  --color-secondary: oklch(0.278 0.033 256.848);
+  --color-secondary-foreground: oklch(0.985 0.002 247.839);
   
-  --color-muted: 217 20% 23%;
-  --color-muted-foreground: 217 16% 58%;
+  --color-muted: oklch(0.278 0.033 256.848);
+  --color-muted-foreground: oklch(0.707 0.022 261.325);
   
-  --color-accent: 217 20% 25%;
-  --color-accent-foreground: 210 40% 98%;
+  --color-accent: oklch(0.278 0.033 256.848);
+  --color-accent-foreground: oklch(0.985 0.002 247.839);
   
-  --color-destructive: 0 62.8% 30.6%;
-  --color-destructive-foreground: 210 40% 98%;
+  --color-destructive: oklch(0.704 0.191 22.216);
+  --color-destructive-foreground: oklch(0.985 0.002 247.839);
   
-  --color-border: 217 18% 26%;
-  --color-input: 217 18% 26%;
-  --color-ring: 224.3 76.3% 48%;
+  --color-border: oklch(1 0 0 / 10%);
+  --color-input: oklch(1 0 0 / 15%);
+  --color-ring: oklch(0.551 0.027 264.364);
 }
 
-* {
-  border-color: hsl(var(--color-border));
-}
-
-body {
-  background-color: hsl(var(--color-background));
-  color: hsl(var(--color-foreground));
-  font-feature-settings: "rlig" 1, "calt" 1;
-}
-
-/* Clickable elements */
-a, button, [role="button"] {
-  cursor: pointer;
+@layer base {
+  * {
+    @apply border-[color:var(--color-border)];
+  }
+  
+  body {
+    @apply bg-[color:var(--color-background)] text-[color:var(--color-foreground)] antialiased;
+    font-family: var(--default-font-family);
+    font-feature-settings: var(--default-font-feature-settings);
+    font-variation-settings: var(--default-font-variation-settings);
+  }
 }
 
 /* Scrollbar styling */
@@ -91,16 +94,16 @@ a, button, [role="button"] {
 }
 
 ::-webkit-scrollbar-track {
-  background-color: hsl(var(--color-secondary));
+  background-color: var(--color-muted);
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--color-muted-foreground) / 0.3);
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 30%, transparent);
   border-radius: 0.375rem;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--color-muted-foreground) / 0.5);
+  background-color: color-mix(in oklch, var(--color-muted-foreground) 50%, transparent);
 }
 
 /* Animations */
@@ -128,84 +131,4 @@ a, button, [role="button"] {
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
-}
-
-/* React Flow styles */
-.react-flow__node {
-  font-family: inherit;
-}
-
-.react-flow__node.selected {
-  box-shadow: 0 0 0 2px hsl(var(--color-primary));
-}
-
-.react-flow__handle {
-  width: 8px;
-  height: 8px;
-  background: hsl(var(--color-primary));
-  border: 2px solid hsl(var(--color-card));
-  border-radius: 50%;
-}
-
-.react-flow__handle-top {
-  top: 0;
-  transform: translate(-50%, -50%);
-}
-
-.react-flow__handle-bottom {
-  bottom: 0;
-  transform: translate(-50%, 50%);
-}
-
-.react-flow__handle-left {
-  left: 0;
-  transform: translate(-50%, -50%);
-}
-
-.react-flow__handle-right {
-  right: 0;
-  transform: translate(50%, -50%);
-}
-
-.react-flow__edge-path {
-  stroke-width: 2;
-}
-
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: hsl(var(--color-primary));
-  stroke-width: 3;
-}
-
-.react-flow__edge:hover .react-flow__edge-path {
-  stroke: hsl(var(--color-primary) / 0.8);
-  stroke-width: 3;
-}
-
-.react-flow__controls {
-  background: hsl(var(--color-card));
-  border: 1px solid hsl(var(--color-border));
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.react-flow__controls-button {
-  background: hsl(var(--color-card));
-  border-bottom: 1px solid hsl(var(--color-border));
-  color: hsl(var(--color-foreground));
-}
-
-.react-flow__controls-button:hover {
-  background: hsl(var(--color-accent));
-}
-
-.react-flow__minimap {
-  background: hsl(var(--color-card));
-  border: 1px solid hsl(var(--color-border));
-}
-
-.react-flow__attribution {
-  background: hsl(var(--color-card));
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  opacity: 0.6;
 }

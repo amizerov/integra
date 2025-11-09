@@ -116,13 +116,13 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
                 className="fixed inset-0 z-10"
                 onClick={() => setShowSortMenu(false)}
               />
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-20 bg-[hsl(var(--color-card))] border border-border" style={{ opacity: 1 }}>
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-20 bg-[color:var(--color-card)] border border-[color:var(--color-border)]">
                 <div className="py-1">
                   {sortFields.map((field) => (
                     <button
                       key={field.value}
                       onClick={() => handleSort(field.value)}
-                      className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left"
+                      className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-[color:var(--color-accent)] transition-colors text-left cursor-pointer"
                     >
                       <span>{field.label}</span>
                       {sortField === field.value && (
@@ -137,14 +137,14 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
         </div>
         
         {/* View mode toggle */}
-        <div className="flex border border-border rounded-md overflow-hidden">
+        <div className="flex border border-[color:var(--color-border)] rounded-md overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleViewModeChange('grid')}
             title="Карточки"
-            className={`rounded-none border-r border-border ${
-              viewMode === 'grid' ? 'bg-slate-600/40 dark:bg-slate-700/40 hover:bg-slate-600/40 dark:hover:bg-slate-700/40' : ''
+            className={`rounded-none border-r border-[color:var(--color-border)] ${
+              viewMode === 'grid' ? 'bg-[color:var(--color-secondary)] hover:bg-[color:var(--color-secondary)]' : ''
             }`}
           >
             <FiGrid className="h-5 w-5" />
@@ -155,7 +155,7 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
             onClick={() => handleViewModeChange('table')}
             title="Таблица"
             className={`rounded-none ${
-              viewMode === 'table' ? 'bg-slate-600/40 dark:bg-slate-700/40 hover:bg-slate-600/40 dark:hover:bg-slate-700/40' : ''
+              viewMode === 'table' ? 'bg-[color:var(--color-secondary)] hover:bg-[color:var(--color-secondary)]' : ''
             }`}
           >
             <FiList className="h-5 w-5" />
@@ -171,7 +171,7 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
 
       {/* Результаты поиска */}
       {searchQuery && (
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-[color:var(--color-muted-foreground)]">
           Найдено систем: {filteredSystems.length}
         </div>
       )}
@@ -185,7 +185,7 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
             ))
           ) : (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">
+              <p className="text-[color:var(--color-muted-foreground)]">
                 {searchQuery ? 'По вашему запросу ничего не найдено' : 'Системы не найдены'}
               </p>
               {searchQuery && (

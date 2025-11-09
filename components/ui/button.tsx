@@ -9,12 +9,12 @@ const Button = React.forwardRef<
   }
 >(({ className, variant = 'default', size = 'default', ...props }, ref) => {
   const variants = {
-    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-    destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-    outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-    ghost: 'hover:bg-accent hover:text-accent-foreground',
-    link: 'text-primary underline-offset-4 hover:underline',
+    default: 'bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)] hover:bg-[color:var(--color-primary)]/90',
+    destructive: 'bg-[color:var(--color-destructive)] text-[color:var(--color-destructive-foreground)] hover:bg-[color:var(--color-destructive)]/90',
+    outline: 'border border-[color:var(--color-input)] bg-[color:var(--color-background)] hover:bg-[color:var(--color-accent)] hover:text-[color:var(--color-accent-foreground)]',
+    secondary: 'bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)] hover:bg-[color:var(--color-secondary)]/80',
+    ghost: 'hover:bg-[color:var(--color-accent)] hover:text-[color:var(--color-accent-foreground)]',
+    link: 'text-[color:var(--color-primary)] underline-offset-4 hover:underline',
   }
 
   const sizes = {
@@ -27,7 +27,7 @@ const Button = React.forwardRef<
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
+        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-[color:var(--color-background)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-ring)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer',
         variants[variant],
         sizes[size],
         className

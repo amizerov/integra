@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiDownload } from 'react-icons/fi'
 import { saveNetworkLayout, getMyNetworkLayouts, getPublicNetworkLayouts, getNetworkLayout } from '@/lib/actions/layouts'
 
@@ -760,56 +762,57 @@ export default function NetworkCanvas({ initialNodes, initialEdges }: NetworkCan
         </svg>
 
         {/* Save Dialog */}
-        {showSaveDialog && (
-          <>
-            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowSaveDialog(false)} />
-            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-card p-6 rounded-lg shadow-lg border border-border w-96">
-              <h3 className="text-lg font-semibold mb-4">Сохранить схему</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Название</label>
-                  <Input
-                    value={layoutName}
-                    onChange={(e) => setLayoutName(e.target.value)}
-                    placeholder="Моя схема"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Описание (опционально)</label>
-                  <Input
-                    value={layoutDescription}
-                    onChange={(e) => setLayoutDescription(e.target.value)}
-                    placeholder="Краткое описание схемы"
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
-                    Отмена
-                  </Button>
-                  <Button onClick={handleSaveLayout}>
-                    Сохранить
-                  </Button>
-                </div>
+        <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>Сохранить схему</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="layout-name">Название</Label>
+                <Input
+                  id="layout-name"
+                  value={layoutName}
+                  onChange={(e) => setLayoutName(e.target.value)}
+                  placeholder="Моя схема"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="layout-description">Описание (опционально)</Label>
+                <Input
+                  id="layout-description"
+                  value={layoutDescription}
+                  onChange={(e) => setLayoutDescription(e.target.value)}
+                  placeholder="Краткое описание схемы"
+                />
               </div>
             </div>
-          </>
-        )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleSaveLayout}>
+                Сохранить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Load Dialog */}
-        {showLoadDialog && (
-          <>
-            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowLoadDialog(false)} />
-            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-card p-6 rounded-lg shadow-lg border border-border w-[600px] max-h-[80vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Загрузить схему</h3>
-              
+        <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>Загрузить схему</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto max-h-[calc(85vh-180px)] pr-2">
               {savedLayouts.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium mb-2">Мои схемы</h4>
+                  <h4 className="text-sm font-medium mb-3">Мои схемы</h4>
                   <div className="space-y-2">
                     {savedLayouts.map((layout) => (
                       <div
                         key={layout.id}
-                        className="p-3 border border-border rounded hover:bg-accent cursor-pointer"
+                        className="p-3 border border-border rounded hover:bg-accent cursor-pointer transition-colors"
                         onClick={() => handleLoadLayout(layout.id)}
                       >
                         <div className="font-medium">{layout.name}</div>
@@ -827,12 +830,12 @@ export default function NetworkCanvas({ initialNodes, initialEdges }: NetworkCan
 
               {publicLayouts.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Публичные схемы</h4>
+                  <h4 className="text-sm font-medium mb-3">Публичные схемы</h4>
                   <div className="space-y-2">
                     {publicLayouts.map((layout) => (
                       <div
                         key={layout.id}
-                        className="p-3 border border-border rounded hover:bg-accent cursor-pointer"
+                        className="p-3 border border-border rounded hover:bg-accent cursor-pointer transition-colors"
                         onClick={() => handleLoadLayout(layout.id)}
                       >
                         <div className="font-medium">{layout.name}</div>
@@ -849,19 +852,18 @@ export default function NetworkCanvas({ initialNodes, initialEdges }: NetworkCan
               )}
 
               {savedLayouts.length === 0 && publicLayouts.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
+                <div className="text-center text-muted-foreground py-12">
                   Сохранённых схем пока нет
                 </div>
               )}
-
-              <div className="flex justify-end mt-6">
-                <Button variant="outline" onClick={() => setShowLoadDialog(false)}>
-                  Закрыть
-                </Button>
-              </div>
             </div>
-          </>
-        )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowLoadDialog(false)}>
+                Закрыть
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Card>
     </div>
   )
