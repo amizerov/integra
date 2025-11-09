@@ -20,6 +20,7 @@ model AllowedUser {
   comment                      String?             @db.VarChar(255)
   createdSystems               InformationSystem[] @relation("SystemCreator")
   createdVersions              SystemVersion[]     @relation("VersionCreator")
+  modifiedVersions             SystemVersion[]     @relation("VersionModifier")
   intgr3_managing_documents    ManagingDocument[]
   intgr4_document_full_text    DocumentFullText[]
   intgr_2_1_user_guides        UserGuide[]
@@ -69,8 +70,10 @@ model SystemVersion {
   lastChangeDate         DateTime?         @map("last_change_date") @db.Timestamp(6)
   system                 InformationSystem @relation(fields: [systemId], references: [systemId], onDelete: NoAction, onUpdate: NoAction, map: "r_1")
   creator                AllowedUser?      @relation("VersionCreator", fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_28")
+  modifier               AllowedUser?      @relation("VersionModifier", fields: [lastChangeUser], references: [userId], onDelete: NoAction, onUpdate: NoAction)
   userGuides             UserGuide?
   dataStreamsSource      DataStream[]      @relation("SourceVersion")
+  dataStreamsRecipient   DataStream[]      @relation("RecipientVersion")
   schemas                Schema[]
 
   @@map("intgr2_system_versions")
@@ -161,6 +164,7 @@ model DataStream {
   intgr_2_2_1_exchange_formats ExchangeFormat[]
   allowed_users                AllowedUser?     @relation(fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_29")
   sourceVersion                SystemVersion    @relation("SourceVersion", fields: [versionId], references: [versionId], onDelete: NoAction, onUpdate: NoAction, map: "r_3")
+  recipientVersion             SystemVersion?   @relation("RecipientVersion", fields: [recipientVersionId], references: [versionId], onDelete: NoAction, onUpdate: NoAction)
 
   @@id([streamId, versionId], map: "xpkintgr_2_2")
   @@map("intgr_2_2_data_streams")

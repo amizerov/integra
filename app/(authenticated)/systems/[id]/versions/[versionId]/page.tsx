@@ -25,7 +25,6 @@ export default async function VersionPage({
         schemas: true,
         dataStreamsSource: true,
         dataStreamsRecipient: true,
-        exchangeFormats: true,
         creator: {
           select: {
             userId: true,
@@ -221,22 +220,18 @@ export default async function VersionPage({
             <CardTitle>Руководства пользователя</CardTitle>
           </CardHeader>
           <CardContent>
-            {version.userGuides && version.userGuides.length > 0 ? (
-              <div className="space-y-2">
-                {version.userGuides.map((guide: any) => (
-                  <div key={guide.versionId} className="p-3 border rounded-md">
-                    <p className="font-medium">{guide.title || 'Руководство'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {guide.yearPublished && `Год: ${guide.yearPublished}`}
-                      {guide.publisher && ` • ${guide.publisher}`}
-                    </p>
-                    {guide.authorsList && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Авторы: {guide.authorsList}
-                      </p>
-                    )}
-                  </div>
-                ))}
+            {version.userGuides ? (
+              <div className="p-3 border rounded-md">
+                <p className="font-medium">{version.userGuides.title || 'Руководство'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {version.userGuides.yearPublished && `Год: ${version.userGuides.yearPublished}`}
+                  {version.userGuides.publisher && ` • ${version.userGuides.publisher}`}
+                </p>
+                {version.userGuides.authorsList && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Авторы: {version.userGuides.authorsList}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Нет данных</p>

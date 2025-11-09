@@ -14,8 +14,7 @@ export async function getConnections() {
         include: {
           system: true
         }
-      },
-      exchangeFormats: true
+      }
     }
   })
   
