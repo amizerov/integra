@@ -1,6 +1,5 @@
 @import "tailwindcss";
-
-@plugin "tailwindcss-animate";
+@import "tw-animate-css";
 
 @theme {
   --default-transition-duration: 150ms;
