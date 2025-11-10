@@ -19,6 +19,7 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
   const [sortField, setSortField] = useState<string>('systemId')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [showSortMenu, setShowSortMenu] = useState(false)
+  const [isLoadingView, setIsLoadingView] = useState(true)
 
   // Load view mode from localStorage on mount
   useEffect(() => {
@@ -26,12 +27,22 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
     if (savedViewMode) {
       setViewMode(savedViewMode)
     }
+    // Задержка для плавной загрузки
+    const timer = setTimeout(() => {
+      setIsLoadingView(false)
+    }, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   // Save view mode to localStorage when it changes
   const handleViewModeChange = (mode: 'grid' | 'table') => {
+    setIsLoadingView(true)
     setViewMode(mode)
     localStorage.setItem('systemsViewMode', mode)
+    // Небольшая задержка для плавного перехода
+    setTimeout(() => {
+      setIsLoadingView(false)
+    }, 100)
   }
 
   const handleSort = (field: string) => {
@@ -176,8 +187,20 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
         </div>
       )}
 
-      {/* Список систем */}
-      {viewMode === 'grid' ? (
+      {/* Loading state */}
+      {isLoadingView ? (
+        <Card>
+          <CardContent className="flex items-center justify-center h-[calc(100vh-16rem)]">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-muted-foreground text-sm">Загрузка...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="animate-fade-in">
+          {/* Список систем */}
+          {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredSystems.length > 0 ? (
             filteredSystems.map((system: any) => (
@@ -212,6 +235,8 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
           >
             Очистить поиск
           </Button>
+        </div>
+      )}
         </div>
       )}
     </div>
