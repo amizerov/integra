@@ -123,6 +123,7 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
                     <th className="text-left p-3 font-medium">Описание потока</th>
                     <th className="text-left p-3 font-medium">Источник</th>
                     <th className="text-left p-3 font-medium">Получатель</th>
+                    <th className="text-left p-3 font-medium">Формат/Протокол</th>
                     <th className="text-center p-3 font-medium">Общая база</th>
                     <th className="text-left p-3 font-medium">Дата создания</th>
                   </tr>
@@ -153,6 +154,9 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
                             Не указан
                           </div>
                         )}
+                      </td>
+                      <td className="p-3">
+                        <div className="text-sm text-muted-foreground">—</div>
                       </td>
                       <td className="p-3 text-center">
                         <div className={`inline-block w-6 h-6 rounded ${
