@@ -4,9 +4,24 @@ import { getDashboardStats } from '@/lib/actions/systems'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { FiArrowRight, FiMap } from 'react-icons/fi'
+import DatabaseErrorScreen from '@/components/DatabaseErrorScreen'
 
 export default async function DashboardPage() {
-  const stats = await getDashboardStats()
+  let stats
+  
+  try {
+    stats = await getDashboardStats()
+  } catch (error: any) {
+    // Если ошибка связана с подключением к БД, показываем красивый экран
+    if (error.message?.includes("Can't reach database server") || 
+        error.code === 'P1001' || 
+        error.name === 'PrismaClientInitializationError') {
+      return <DatabaseErrorScreen />
+    }
+    // Для других ошибок пробрасываем дальше
+    throw error
+  }
+  
   return (
     <div className="space-y-6">
       {/* Две колонки: Статистика и Последние изменения */}
@@ -22,59 +37,59 @@ export default async function DashboardPage() {
           <CardContent className="space-y-6">
             {/* Основные системы */}
             <div>
-              <h4 className="text-sm font-semibold text-[color:var(--color-foreground)] mb-3">Системы и связи</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Системы и связи</h4>
               <div className="grid grid-cols-2 gap-4">
-                <Link href="/systems" className="flex items-center justify-between p-3 bg-[color:var(--color-muted)] rounded-lg hover:bg-[color:var(--color-muted)]/80 transition-colors cursor-pointer">
+                <Link href="/systems" className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors cursor-pointer">
                   <div>
-                    <p className="text-xs text-[color:var(--color-muted-foreground)] uppercase tracking-wide">Системы</p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">Из них {stats.systemsWithPersonalData} содержат персональные данные</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Системы</p>
+                    <p className="text-sm text-muted-foreground">Из них {stats.systemsWithPersonalData} содержат персональные данные</p>
                   </div>
-                  <p className="text-xl font-bold text-[color:var(--color-primary)]">{stats.totalSystems}</p>
+                  <p className="text-xl font-bold text-primary">{stats.totalSystems}</p>
                 </Link>
                 
-                <div className="flex items-center justify-between p-3 bg-[color:var(--color-muted)] rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div>
-                    <p className="text-xs text-[color:var(--color-muted-foreground)] uppercase tracking-wide">Версии</p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">{stats.activeVersions} активных</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Версии</p>
+                    <p className="text-sm text-muted-foreground">{stats.activeVersions} активных</p>
                   </div>
-                  <p className="text-xl font-bold text-[color:var(--color-primary)]">{stats.totalVersions}</p>
+                  <p className="text-xl font-bold text-primary">{stats.totalVersions}</p>
                 </div>
                 
-                <Link href="/connections" className="flex items-center justify-between p-3 bg-[color:var(--color-muted)] rounded-lg hover:bg-[color:var(--color-muted)]/80 transition-colors cursor-pointer">
+                <Link href="/connections" className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors cursor-pointer">
                   <div>
-                    <p className="text-xs text-[color:var(--color-muted-foreground)] uppercase tracking-wide">Связи</p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">между системами</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Связи</p>
+                    <p className="text-sm text-muted-foreground">между системами</p>
                   </div>
-                  <p className="text-xl font-bold text-[color:var(--color-primary)]">{stats.totalConnections}</p>
+                  <p className="text-xl font-bold text-primary">{stats.totalConnections}</p>
                 </Link>
                 
-                <div className="flex items-center justify-between p-3 bg-[color:var(--color-muted)] rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div>
-                    <p className="text-xs text-[color:var(--color-muted-foreground)] uppercase tracking-wide">Платформы</p>
-                    <p className="text-sm text-[color:var(--color-muted-foreground)]">типов СУБД</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Платформы</p>
+                    <p className="text-sm text-muted-foreground">типов СУБД</p>
                   </div>
-                  <p className="text-xl font-bold text-[color:var(--color-primary)]">{stats.systemsByPlatform.length}</p>
+                  <p className="text-xl font-bold text-primary">{stats.systemsByPlatform.length}</p>
                 </div>
               </div>
             </div>
 
             {/* Документация */}
             <div>
-              <h4 className="text-sm font-semibold text-[color:var(--color-foreground)] mb-3">Документация</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-3">Документация</h4>
               <div className="grid grid-cols-3 gap-3">
-                <div className="text-center p-3 bg-[color:var(--color-muted)] rounded-lg">
-                  <p className="text-lg font-bold text-[color:var(--color-primary)]">{stats.totalManagingDocuments}</p>
-                  <p className="text-xs text-[color:var(--color-muted-foreground)]">Управленческие</p>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-lg font-bold text-primary">{stats.totalManagingDocuments}</p>
+                  <p className="text-xs text-muted-foreground">Управленческие</p>
                 </div>
                 
-                <div className="text-center p-3 bg-[color:var(--color-muted)] rounded-lg">
-                  <p className="text-lg font-bold text-[color:var(--color-primary)]">{stats.totalFullTextDocuments}</p>
-                  <p className="text-xs text-[color:var(--color-muted-foreground)]">Полнотекстовые</p>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-lg font-bold text-primary">{stats.totalFullTextDocuments}</p>
+                  <p className="text-xs text-muted-foreground">Полнотекстовые</p>
                 </div>
                 
-                <div className="text-center p-3 bg-[color:var(--color-muted)] rounded-lg">
-                  <p className="text-lg font-bold text-[color:var(--color-primary)]">{stats.totalUserGuides}</p>
-                  <p className="text-xs text-[color:var(--color-muted-foreground)]">Методички</p>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-lg font-bold text-primary">{stats.totalUserGuides}</p>
+                  <p className="text-xs text-muted-foreground">Методички</p>
                 </div>
               </div>
             </div>
@@ -98,17 +113,17 @@ export default async function DashboardPage() {
                       <p className="text-sm font-medium leading-none">
                         {system.systemName}
                       </p>
-                      <p className="text-sm text-[color:var(--color-muted-foreground)]">
+                      <p className="text-sm text-muted-foreground">
                         Код: {system.systemCode} • Изменил: {system.modifiedBy}
                       </p>
                     </div>
-                    <div className="ml-auto text-sm text-[color:var(--color-muted-foreground)]">
+                    <div className="ml-auto text-sm text-muted-foreground">
                       {formatDate(system.updatedAt)}
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-[color:var(--color-muted-foreground)]">Нет данных</p>
+                <p className="text-sm text-muted-foreground">Нет данных</p>
               )}
             </div>
           </CardContent>
@@ -132,13 +147,13 @@ export default async function DashboardPage() {
                 return (
                   <div key={item.platform} className="flex items-center">
                     <div className="w-32 text-sm font-medium">{item.platform}</div>
-                    <div className="flex-1 bg-[color:var(--color-secondary)] rounded-full h-2">
+                    <div className="flex-1 bg-secondary rounded-full h-2">
                       <div 
-                        className="bg-[color:var(--color-primary)] h-2 rounded-full" 
+                        className="bg-primary h-2 rounded-full" 
                         style={{ width: `${percentage}%` }} 
                       />
                     </div>
-                    <div className="w-12 text-right text-sm text-[color:var(--color-muted-foreground)]">
+                    <div className="w-12 text-right text-sm text-muted-foreground">
                       {item.count}
                     </div>
                   </div>
@@ -163,13 +178,13 @@ export default async function DashboardPage() {
                 return (
                   <div key={item.database} className="flex items-center">
                     <div className="w-32 text-sm font-medium">{item.database}</div>
-                    <div className="flex-1 bg-[color:var(--color-secondary)] rounded-full h-2">
+                    <div className="flex-1 bg-secondary rounded-full h-2">
                       <div 
-                        className="bg-[color:var(--color-primary)] h-2 rounded-full" 
+                        className="bg-primary h-2 rounded-full" 
                         style={{ width: `${percentage}%` }} 
                       />
                     </div>
-                    <div className="w-12 text-right text-sm text-[color:var(--color-muted-foreground)]">
+                    <div className="w-12 text-right text-sm text-muted-foreground">
                       {item.count}
                     </div>
                   </div>

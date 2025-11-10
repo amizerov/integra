@@ -47,12 +47,12 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-[var(--mgu-red)] rounded-lg flex items-center justify-center mx-auto mb-3">
-              <span className="text-white font-bold text-2xl">МГУ</span>
+            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+              <span className="text-primary-foreground font-bold text-2xl">НИВЦ</span>
             </div>
-            <h1 className="text-2xl font-bold">АИС Интеграция</h1>
+            <h1 className="text-2xl font-bold">АИС Интеграция НИВЦ</h1>
             <p className="text-sm text-muted-foreground">
-              Система регистрации АИС МГУ
+              Система регистрации АИС НИВЦ МГУ
             </p>
           </div>
         </div>

@@ -67,7 +67,7 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Связи между системами</h1>
-          <p className="text-[color:var(--color-muted-foreground)] mt-1">
+          <p className="text-muted-foreground mt-1">
             {viewMode === 'map' 
               ? 'Интерактивная схема потоков данных между версиями систем' 
               : 'Табличное представление потоков данных между версиями систем'
@@ -76,14 +76,14 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
         </div>
         
         {/* View mode toggle */}
-        <div className="flex border border-[color:var(--color-border)] rounded-md overflow-hidden">
+        <div className="flex border border-border rounded-md overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => handleViewModeChange('map')}
             title="Карта"
-            className={`rounded-none border-r border-[color:var(--color-border)] ${
-              viewMode === 'map' ? 'bg-[color:var(--color-secondary)] hover:bg-[color:var(--color-secondary)]' : ''
+            className={`rounded-none border-r border-border ${
+              viewMode === 'map' ? 'bg-secondary hover:bg-secondary' : ''
             }`}
           >
             <FiMap className="h-5 w-5" />
@@ -94,7 +94,7 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
             onClick={() => handleViewModeChange('list')}
             title="Таблица"
             className={`rounded-none ${
-              viewMode === 'list' ? 'bg-[color:var(--color-secondary)] hover:bg-[color:var(--color-secondary)]' : ''
+              viewMode === 'list' ? 'bg-secondary hover:bg-secondary' : ''
             }`}
           >
             <FiList className="h-5 w-5" />
@@ -118,18 +118,18 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b-2 border-[color:var(--color-border)]">
+                  <tr className="border-b-2 border-border">
                     <th className="text-left p-3 font-medium">ID</th>
                     <th className="text-left p-3 font-medium">Описание потока</th>
                     <th className="text-left p-3 font-medium">Источник</th>
                     <th className="text-left p-3 font-medium">Получатель</th>
-                    <th className="text-left p-3 font-medium text-center">Общая база</th>
+                    <th className="text-center p-3 font-medium">Общая база</th>
                     <th className="text-left p-3 font-medium">Дата создания</th>
                   </tr>
                 </thead>
                 <tbody>
                   {connectionsData.map((connection) => (
-                    <tr key={connection.id} className="border-b border-[color:var(--color-border)] hover:bg-[color:var(--color-accent)] transition-colors">
+                    <tr key={connection.id} className="border-b border-border hover:bg-accent transition-colors">
                       <td className="p-3">
                         <div className="font-mono text-sm">{connection.streamId}</div>
                       </td>
@@ -149,7 +149,7 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
                             </div>
                           </div>
                         ) : (
-                          <div className="text-sm text-[color:var(--color-muted-foreground)]">
+                          <div className="text-sm text-muted-foreground">
                             Не указан
                           </div>
                         )}
@@ -157,8 +157,8 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
                       <td className="p-3 text-center">
                         <div className={`inline-block w-6 h-6 rounded ${
                           connection.shareDatabase 
-                            ? 'bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)]' 
-                            : 'bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)]'
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-secondary text-secondary-foreground'
                         }`}>
                           {connection.shareDatabase ? '✓' : '✗'}
                         </div>
@@ -174,7 +174,7 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
               </table>
               
               {connectionsData.length === 0 && (
-                <div className="text-center py-12 text-[color:var(--color-muted-foreground)]">
+                <div className="text-center py-12 text-muted-foreground">
                   Потоки данных не найдены
                 </div>
               )}

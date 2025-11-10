@@ -43,7 +43,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b border-[color:var(--color-border)] bg-[color:var(--color-card)]">
+    <header className="h-16 border-b border-(--color-border) bg-(--color-card)">
       <div className="flex items-center justify-between h-full px-4 md:px-6">
         {/* Mobile menu button + Page Title */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -91,10 +91,10 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-3 rounded-full hover:bg-[color:var(--color-accent)] px-2 md:px-3 py-1.5 transition-colors cursor-pointer"
+              className="flex items-center space-x-3 rounded-full hover:bg-(--color-accent) px-2 md:px-3 py-1.5 transition-colors cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full bg-[color:var(--color-primary)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[color:var(--color-primary-foreground)] text-sm font-medium">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                <span className="text-(--color-primary-foreground) text-sm font-medium">
                   {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || 'U'}
                 </span>
               </div>
@@ -102,7 +102,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <div className="text-sm font-medium">
                   {session?.user?.name || session?.user?.email}
                 </div>
-                <div className="text-xs text-[color:var(--color-muted-foreground)]">
+                <div className="text-xs text-muted-foreground">
                   {(session?.user as any)?.userLevel === 0 ? 'Администратор' : 'Пользователь'}
                 </div>
               </div>
@@ -115,11 +115,11 @@ export function Header({ onMenuClick }: HeaderProps) {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 mt-2 w-56 bg-[color:var(--color-card)] border border-[color:var(--color-border)] rounded-md shadow-lg z-20">
+                <div className="absolute right-0 mt-2 w-56 bg-(--color-card) border border-(--color-border) rounded-md shadow-lg z-20">
                   <div className="py-1">
                     <Link
                       href="/profile"
-                      className="flex items-center px-4 py-2 text-sm hover:bg-[color:var(--color-accent)] transition-colors cursor-pointer"
+                      className="flex items-center px-4 py-2 text-sm hover:bg-(--color-accent) transition-colors cursor-pointer"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <FiUser className="mr-3 h-4 w-4" />
@@ -127,16 +127,16 @@ export function Header({ onMenuClick }: HeaderProps) {
                     </Link>
                     <Link
                       href="/settings"
-                      className="flex items-center px-4 py-2 text-sm hover:bg-[color:var(--color-accent)] transition-colors cursor-pointer"
+                      className="flex items-center px-4 py-2 text-sm hover:bg-(--color-accent) transition-colors cursor-pointer"
                       onClick={() => setShowUserMenu(false)}
                     >
                       <FiSettings className="mr-3 h-4 w-4" />
                       Настройки
                     </Link>
-                    <hr className="my-1 border-[color:var(--color-border)]" />
+                    <hr className="my-1 border-(--color-border)" />
                     <button
                       onClick={() => signOut({ callbackUrl: '/login' })}
-                      className="flex items-center w-full px-4 py-2 text-sm text-[color:var(--color-destructive)] hover:bg-[color:var(--color-accent)] transition-colors cursor-pointer"
+                      className="flex items-center w-full px-4 py-2 text-sm text-destructive hover:bg-(--color-accent) transition-colors cursor-pointer"
                     >
                       <FiLogOut className="mr-3 h-4 w-4" />
                       Выйти
