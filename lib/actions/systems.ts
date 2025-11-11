@@ -2,6 +2,51 @@
 
 import { prisma } from '@/lib/db'
 
+/**
+ * Получить топ систем по количеству связей (входящих + исходящих)
+ */
+export async function getTopConnectedSystems(limit: number = 4) {
+  // Получаем все системы с их версиями и связями
+  const systems = await prisma.informationSystem.findMany({
+    include: {
+      versions: {
+        include: {
+          dataStreamsSource: true, // Исходящие потоки
+          dataStreamsRecipient: true, // Входящие потоки
+        }
+      }
+    }
+  })
+  
+  // Подсчитываем общее количество связей для каждой системы
+  const systemsWithConnections = systems.map(system => {
+    const outgoingCount = system.versions.reduce(
+      (sum: number, v: any) => sum + (v.dataStreamsSource?.length || 0), 
+      0
+    )
+    const incomingCount = system.versions.reduce(
+      (sum: number, v: any) => sum + (v.dataStreamsRecipient?.length || 0), 
+      0
+    )
+    const totalConnections = outgoingCount + incomingCount
+    
+    return {
+      systemId: system.systemId,
+      systemName: system.systemName || '',
+      systemShortName: system.systemShortName || '',
+      totalConnections,
+      outgoingCount,
+      incomingCount,
+    }
+  })
+  
+  // Сортируем по количеству связей и берем топ
+  return systemsWithConnections
+    .filter(s => s.totalConnections > 0)
+    .sort((a, b) => b.totalConnections - a.totalConnections)
+    .slice(0, limit)
+}
+
 export async function getSystems() {
   const systems = await prisma.informationSystem.findMany({
     include: {
@@ -100,7 +145,8 @@ export async function getDashboardStats() {
     totalManagingDocuments,
     totalFullTextDocuments,
     totalUserGuides,
-    recentSystemsData
+    recentSystemsData,
+    topConnectedSystems,
   ] = await Promise.all([
     prisma.informationSystem.count(),
     prisma.informationSystem.count({
@@ -125,6 +171,8 @@ export async function getDashboardStats() {
         }
       }
     }),
+    // Получаем топ систем по количеству связей
+    getTopConnectedSystems(10),
   ])
 
   // Сортируем системы по дате изменения их последней версии и берем топ-5
@@ -149,6 +197,7 @@ export async function getDashboardStats() {
     totalUserGuides,
     systemsByPlatform: [],
     systemsByDatabase: [],
+    topConnectedSystems,
     recentSystems: sortedSystems.map((s: any) => {
       const latestVersion = s.versions[0] // Самая последняя версия по дате изменения
       return {

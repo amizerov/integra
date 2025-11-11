@@ -5,6 +5,7 @@ import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { FiArrowRight, FiMap } from 'react-icons/fi'
 import DatabaseErrorScreen from '@/components/DatabaseErrorScreen'
+import TopSystemsCards from './TopSystems'
 
 export default async function DashboardPage() {
   let stats
@@ -24,15 +25,26 @@ export default async function DashboardPage() {
   
   return (
     <div className="space-y-6">
+      {/* Топ АИС по количеству связей */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">Самые связанные системы</h2>
+          <Link href="/connections">
+            <Button variant="outline" size="sm">
+              <FiMap className="h-4 w-4 mr-2" />
+              Все связи
+            </Button>
+          </Link>
+        </div>
+        <TopSystemsCards systems={stats.topConnectedSystems} />
+      </div>
+
       {/* Две колонки: Статистика и Последние изменения */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Статистика */}
         <Card>
           <CardHeader>
-            <CardTitle>Статистика системы</CardTitle>
-            <CardDescription>
-              Основные показатели
-            </CardDescription>
+            <CardTitle>Основные показатели</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Основные системы */}

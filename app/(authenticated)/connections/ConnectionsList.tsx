@@ -44,9 +44,10 @@ interface ConnectionsListProps {
     shareDatabase: boolean
     createdAt: Date | null
   }>
+  initialFilterSystemId?: number
 }
 
-export default function ConnectionsList({ networkData, connectionsData }: ConnectionsListProps) {
+export default function ConnectionsList({ networkData, connectionsData, initialFilterSystemId }: ConnectionsListProps) {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('list')
   const [schemaType, setSchemaType] = useState<'manual' | 'graphviz'>('manual')
   const [showFilterMenu, setShowFilterMenu] = useState(false)
@@ -59,9 +60,15 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
   useEffect(() => {
     const savedViewMode = localStorage.getItem('connectionsViewMode') as 'map' | 'list' | null
     const savedSchemaType = localStorage.getItem('connectionsSchemaType') as 'manual' | 'graphviz' | null
-    if (savedViewMode) {
+    
+    // Если есть фильтр по системе, автоматически переключаемся на схему
+    if (initialFilterSystemId) {
+      setViewMode('map')
+      localStorage.setItem('connectionsViewMode', 'map')
+    } else if (savedViewMode) {
       setViewMode(savedViewMode)
     }
+    
     if (savedSchemaType) {
       setSchemaType(savedSchemaType)
     }
@@ -70,7 +77,7 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
       setIsLoadingView(false)
     }, 100)
     return () => clearTimeout(timer)
-  }, [])
+  }, [initialFilterSystemId])
 
   // Save view mode to localStorage when it changes
   const handleViewModeChange = (mode: 'map' | 'list') => {
@@ -82,6 +89,38 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
       setIsLoadingView(false)
     }, 100)
   }
+
+  // Фильтрация данных по системе
+  const filteredNetworkData = initialFilterSystemId ? (() => {
+    // Находим все версии выбранной системы
+    const selectedSystemVersionIds = networkData.nodes
+      .filter(node => node.systemId === initialFilterSystemId)
+      .map(node => node.id)
+    
+    // Находим связанные узлы (напрямую связанные с выбранной системой)
+    const connectedNodeIds = new Set<string>()
+    selectedSystemVersionIds.forEach(id => connectedNodeIds.add(id))
+    
+    networkData.edges.forEach(edge => {
+      if (selectedSystemVersionIds.includes(edge.source)) {
+        connectedNodeIds.add(edge.target)
+      }
+      if (selectedSystemVersionIds.includes(edge.target)) {
+        connectedNodeIds.add(edge.source)
+      }
+    })
+    
+    // Фильтруем узлы и рёбра
+    const filteredNodes = networkData.nodes.filter(node => 
+      connectedNodeIds.has(node.id)
+    )
+    
+    const filteredEdges = networkData.edges.filter(edge =>
+      connectedNodeIds.has(edge.source) && connectedNodeIds.has(edge.target)
+    )
+    
+    return { nodes: filteredNodes, edges: filteredEdges }
+  })() : networkData
 
   return (
     <div className="space-y-4">
@@ -311,8 +350,8 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
           {viewMode === 'map' ? (
             schemaType === 'manual' ? (
               <NetworkCanvas 
-                initialNodes={networkData.nodes} 
-                initialEdges={networkData.edges}
+                initialNodes={filteredNetworkData.nodes} 
+                initialEdges={filteredNetworkData.edges}
                 renderToolbar={(controls) => {
                   if (!toolbarPortalRef.current) return null
                   return createPortal(
@@ -331,8 +370,8 @@ export default function ConnectionsList({ networkData, connectionsData }: Connec
               />
             ) : (
               <GraphvizCanvas 
-                initialNodes={networkData.nodes} 
-                initialEdges={networkData.edges}
+                initialNodes={filteredNetworkData.nodes} 
+                initialEdges={filteredNetworkData.edges}
                 renderToolbar={(controls) => {
                   if (!toolbarPortalRef.current) return null
                   return createPortal(

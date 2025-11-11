@@ -2,7 +2,11 @@ import { getSystemsNetworkData, getConnectionsTableData } from '@/lib/actions/ne
 import ConnectionsList from './ConnectionsList'
 import DatabaseErrorScreen from '@/components/DatabaseErrorScreen'
 
-export default async function ConnectionsPage() {
+export default async function ConnectionsPage({
+  searchParams,
+}: {
+  searchParams: { filter?: string }
+}) {
   try {
     const [networkData, connectionsData] = await Promise.all([
       getSystemsNetworkData(),
@@ -11,7 +15,11 @@ export default async function ConnectionsPage() {
 
     return (
       <div className="space-y-6">
-        <ConnectionsList networkData={networkData} connectionsData={connectionsData} />
+        <ConnectionsList 
+          networkData={networkData} 
+          connectionsData={connectionsData}
+          initialFilterSystemId={searchParams.filter ? parseInt(searchParams.filter) : undefined}
+        />
       </div>
     )
   } catch (error: any) {

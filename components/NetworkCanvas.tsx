@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from '@/components/ui/label'
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiDownload, FiEdit2, FiTrash2 } from 'react-icons/fi'
 import { saveNetworkLayout, getMyNetworkLayouts, getPublicNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/lib/actions/layouts'
+import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/lib/graph-layout'
 
 interface NetworkNode {
   id: string
@@ -277,23 +278,32 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
 
   // Круговая раскладка
   function calculateCircularLayout(nodeList: typeof initialNodes): NetworkNode[] {
-    const radius = 300
-    const centerX = 500
-    const centerY = 400
+    // Используем функцию из lib/graph-layout.ts
+    const containerWidth = svgRef.current?.clientWidth || 1200
+    const containerHeight = svgRef.current?.clientHeight || 800
     
-    return nodeList.map((node, index) => {
-      const angle = (index / nodeList.length) * 2 * Math.PI
-      const x = centerX + radius * Math.cos(angle)
-      const y = centerY + radius * Math.sin(angle)
-      
-      return {
-        ...node,
-        x,
-        y,
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-      }
-    })
+    return circularLayout(nodeList, containerWidth, containerHeight) as NetworkNode[]
+  }
+  
+  // Оптимальная раскладка с минимизацией пересечений
+  function calculateOptimalLayoutNodes(nodeList: typeof initialNodes): NetworkNode[] {
+    const containerWidth = svgRef.current?.clientWidth || 1200
+    const containerHeight = svgRef.current?.clientHeight || 800
+    
+    const edgesForLayout = filteredInitialEdges.map(e => ({
+      source: e.source,
+      target: e.target,
+    }))
+    
+    return calculateOptimalLayout(nodeList, edgesForLayout, {
+      width: containerWidth,
+      height: containerHeight,
+      iterations: 1000,
+      temperature: 500,
+      repulsionStrength: 100000,
+      attractionStrength: 0.0005,
+      centerGravity: 0.005,
+    }) as NetworkNode[]
   }
 
   // Получить координаты точки соединения
@@ -513,7 +523,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
 
   // Сбросить layout
   const resetLayout = useCallback(() => {
-    const newNodes = calculateCircularLayout(filteredInitialNodes)
+    const newNodes = calculateOptimalLayoutNodes(filteredInitialNodes)
     setNodes(newNodes)
     // Сохранение происходит автоматически через useEffect
   }, [filteredInitialNodes])

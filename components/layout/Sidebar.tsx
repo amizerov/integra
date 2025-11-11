@@ -44,11 +44,11 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed md:static inset-y-0 left-0 z-50 flex flex-col w-64 bg-(--color-card) border-r border-(--color-border) transition-transform duration-300 ease-in-out",
+        "fixed md:static inset-y-0 left-0 z-50 flex flex-col w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
         {/* Logo */}
-        <div className="flex items-center h-16 px-6 border-b border-(--color-border)">
+        <div className="flex items-center h-16 px-6 border-b border-border">
           <Link href="/dashboard" className="flex items-center space-x-2 flex-1">
             <div className="h-8 px-3 bg-[#4285B4] rounded-md flex items-center justify-center">
               <span className="text-white font-bold text-xs">НИВЦ</span>
@@ -82,8 +82,8 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                 className={cn(
                   'flex items-center px-4 py-2.5 text-sm font-medium rounded-md transition-colors cursor-pointer',
                   isActive
-                    ? 'bg-(--color-secondary) text-(--color-foreground)'
-                    : 'text-muted-foreground hover:bg-(--color-accent) hover:text-(--color-foreground)'
+                    ? 'bg-secondary text-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 )}
               >
                 <item.icon className="mr-3 h-5 w-5" />
@@ -94,7 +94,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-(--color-border)">
+        <div className="p-4 border-t border-border">
           <div className="text-xs text-muted-foreground text-center">
             © 2025 НИВЦ МГУ имени М.В.Ломоносова
           </div>
