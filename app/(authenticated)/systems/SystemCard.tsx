@@ -18,20 +18,13 @@ interface SystemCardProps {
       versions: number
       documents: number
       connections: number
+      outgoingConnections?: number
+      incomingConnections?: number
     }
   }
 }
 
 export default function SystemCard({ system }: SystemCardProps) {
-  const formatDate = (date: Date | null | undefined) => {
-    if (!date) return 'Не указано'
-    return new Date(date).toLocaleDateString('ru-RU', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
-    })
-  }
-
   return (
     <Link href={`/systems/${system.id}`}>
       <Card className="hover:shadow-lg transition-all cursor-pointer h-full">
@@ -56,43 +49,27 @@ export default function SystemCard({ system }: SystemCardProps) {
                 )}
               </div>
             </div>
+            <div className="shrink-0 text-right">
+              <div className="text-sm font-semibold text-primary">{system._count.versions}</div>
+              <div className="text-xs text-muted-foreground">версий</div>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 space-y-2">
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="text-center">
-              <div className="font-semibold text-lg">{system._count.versions}</div>
-              <div className="text-muted-foreground">Версий</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">{system._count.documents}</div>
-              <div className="text-muted-foreground">Документов</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-lg">{system._count.connections}</div>
-              <div className="text-muted-foreground">Связей</div>
-            </div>
-          </div>
-          
-          {(system.createdBy || system.modifiedBy) && (
-            <div className="pt-2 border-t text-xs">
-              <div className="flex justify-between items-center gap-2">
-                {system.createdBy && (
-                  <div className="flex-1 min-w-0">
-                    <span className="text-muted-foreground">Создана: </span>
-                    <span className="truncate" title={`${system.createdBy}, ${formatDate(system.createdAt)}`}>
-                      {system.createdBy.split(' ')[0]}, {formatDate(system.createdAt)}
-                    </span>
-                  </div>
-                )}
-                {system.modifiedBy && (
-                  <div className="flex-1 min-w-0 text-right">
-                    <span className="text-muted-foreground">Изменена: </span>
-                    <span className="truncate" title={`${system.modifiedBy}, ${formatDate(system.modifiedAt)}`}>
-                      {system.modifiedBy.split(' ')[0]}, {formatDate(system.modifiedAt)}
-                    </span>
-                  </div>
-                )}
+        <CardContent className="pt-0">
+          {/* Входящие и исходящие связи */}
+          {(system._count.outgoingConnections !== undefined || system._count.incomingConnections !== undefined) && (
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="text-center p-2 bg-blue-500/10 rounded">
+                <div className="font-semibold text-blue-600 dark:text-blue-400">
+                  {system._count.outgoingConnections || 0}
+                </div>
+                <div className="text-muted-foreground">Исходящие</div>
+              </div>
+              <div className="text-center p-2 bg-green-500/10 rounded">
+                <div className="font-semibold text-green-600 dark:text-green-400">
+                  {system._count.incomingConnections || 0}
+                </div>
+                <div className="text-muted-foreground">Входящие</div>
               </div>
             </div>
           )}

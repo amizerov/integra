@@ -1,26 +1,10 @@
 'use server'
 
-import { prisma } from '@/lib/db'
+import { getConnections } from './getConnections'
 
-export async function getConnections() {
-  const connections = await prisma.dataStream.findMany({
-    include: {
-      sourceVersion: {
-        include: {
-          system: true
-        }
-      },
-      recipientVersion: {
-        include: {
-          system: true
-        }
-      }
-    }
-  })
-  
-  return connections
-}
-
+/**
+ * Получить данные для графа связей
+ */
 export async function getConnectionsGraph() {
   const connections = await getConnections()
   

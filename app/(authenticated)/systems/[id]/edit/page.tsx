@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getSystemById } from '@/lib/actions/systems'
+import { getSystemById } from '@/app/(authenticated)/systems/actions/createSystem'
 import EditSystemForm from './EditSystemForm'
 
 export default async function EditSystemPage({ params }: { params: Promise<{ id: string }> }) {

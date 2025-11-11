@@ -1,4 +1,4 @@
-import { getSystems } from '@/lib/actions/systems'
+import { getSystems } from '@/app/(authenticated)/systems/actions/createSystem'
 import SystemsList from './SystemsList'
 
 export default async function SystemsPage() {

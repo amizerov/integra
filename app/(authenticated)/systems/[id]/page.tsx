@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getSystemById } from '@/lib/actions/systems'
+import { getSystemById } from '@/app/(authenticated)/systems/actions/createSystem'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'

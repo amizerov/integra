@@ -1,13 +1,16 @@
-import { getSystemsNetworkData, getConnectionsTableData } from '@/lib/actions/network'
+import { getSystemsNetworkData, getConnectionsTableData } from './actions'
 import ConnectionsList from './ConnectionsList'
 import DatabaseErrorScreen from '@/components/DatabaseErrorScreen'
 
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: { filter?: string }
+  searchParams: Promise<{ filter?: string }>
 }) {
   try {
+    // Await searchParams в Next.js 15+
+    const params = await searchParams
+    
     const [networkData, connectionsData] = await Promise.all([
       getSystemsNetworkData(),
       getConnectionsTableData()
@@ -18,7 +21,7 @@ export default async function ConnectionsPage({
         <ConnectionsList 
           networkData={networkData} 
           connectionsData={connectionsData}
-          initialFilterSystemId={searchParams.filter ? parseInt(searchParams.filter) : undefined}
+          initialFilterSystemId={params.filter ? parseInt(params.filter) : undefined}
         />
       </div>
     )

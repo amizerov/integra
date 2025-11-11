@@ -32,11 +32,11 @@ export default function SystemsTable({ systems }: SystemsTableProps) {
             <TableHead className="w-[60px]">ID</TableHead>
             <TableHead>Название</TableHead>
             <TableHead className="w-[150px]">Код</TableHead>
-            <TableHead className="w-[80px] text-center">Версий</TableHead>
-            <TableHead className="w-[80px] text-center">Связей</TableHead>
-            <TableHead className="w-[100px] text-center">Документов</TableHead>
-            <TableHead className="w-[150px]">Создана кем</TableHead>
-            <TableHead className="w-[100px]">Создана когда</TableHead>
+            <TableHead className="w-20 text-center">Версий</TableHead>
+            <TableHead className="w-20 text-center">Связей</TableHead>
+            <TableHead className="w-20 text-center">Документов</TableHead>
+            <TableHead className="w-[150px]">Запись добавлена</TableHead>
+            <TableHead className="w-[100px]">Добавлена когда</TableHead>
             <TableHead className="w-[150px]">Изменена кем</TableHead>
             <TableHead className="w-[100px]">Изменена когда</TableHead>
           </TableRow>

@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import NetworkCanvas from '@/components/NetworkCanvas'
-import GraphvizCanvas from '@/components/GraphvizCanvas'
+import NetworkCanvas from '@/app/(authenticated)/connections/NetworkCanvas'
+import GraphvizCanvas from '@/app/(authenticated)/connections/GraphvizCanvas'
 import { FiMap, FiList, FiFilter, FiLayers, FiArrowUp, FiArrowDown, FiGitBranch } from 'react-icons/fi'
 import { formatDate } from '@/lib/utils'
 
@@ -61,15 +61,17 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
     const savedViewMode = localStorage.getItem('connectionsViewMode') as 'map' | 'list' | null
     const savedSchemaType = localStorage.getItem('connectionsSchemaType') as 'manual' | 'graphviz' | null
     
-    // Если есть фильтр по системе, автоматически переключаемся на схему
+    // Если есть фильтр по системе, автоматически переключаемся на схему Graphviz
     if (initialFilterSystemId) {
       setViewMode('map')
+      setSchemaType('graphviz')
       localStorage.setItem('connectionsViewMode', 'map')
+      localStorage.setItem('connectionsSchemaType', 'graphviz')
     } else if (savedViewMode) {
       setViewMode(savedViewMode)
     }
     
-    if (savedSchemaType) {
+    if (savedSchemaType && !initialFilterSystemId) {
       setSchemaType(savedSchemaType)
     }
     // Задержка для плавной загрузки
@@ -92,10 +94,14 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
 
   // Фильтрация данных по системе
   const filteredNetworkData = initialFilterSystemId ? (() => {
+    console.log('Filtering for systemId:', initialFilterSystemId)
+    
     // Находим все версии выбранной системы
     const selectedSystemVersionIds = networkData.nodes
       .filter(node => node.systemId === initialFilterSystemId)
       .map(node => node.id)
+    
+    console.log('Selected system version IDs:', selectedSystemVersionIds)
     
     // Находим связанные узлы (напрямую связанные с выбранной системой)
     const connectedNodeIds = new Set<string>()
@@ -110,6 +116,8 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
       }
     })
     
+    console.log('Connected node IDs:', Array.from(connectedNodeIds))
+    
     // Фильтруем узлы и рёбра
     const filteredNodes = networkData.nodes.filter(node => 
       connectedNodeIds.has(node.id)
@@ -118,6 +126,9 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
     const filteredEdges = networkData.edges.filter(edge =>
       connectedNodeIds.has(edge.source) && connectedNodeIds.has(edge.target)
     )
+    
+    console.log('Filtered nodes count:', filteredNodes.length, 'of', networkData.nodes.length)
+    console.log('Filtered edges count:', filteredEdges.length, 'of', networkData.edges.length)
     
     return { nodes: filteredNodes, edges: filteredEdges }
   })() : networkData
@@ -372,6 +383,8 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
               <GraphvizCanvas 
                 initialNodes={filteredNetworkData.nodes} 
                 initialEdges={filteredNetworkData.edges}
+                initialLayout={initialFilterSystemId ? 'circo' : undefined}
+                initialShowLabels={initialFilterSystemId ? false : true}
                 renderToolbar={(controls) => {
                   if (!toolbarPortalRef.current) return null
                   return createPortal(

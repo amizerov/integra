@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getDashboardStats } from '@/lib/actions/systems'
+import { getDashboardStats } from './actions'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { FiArrowRight, FiMap } from 'react-icons/fi'

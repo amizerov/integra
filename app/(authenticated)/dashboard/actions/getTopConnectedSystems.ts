@@ -53,6 +53,7 @@ export async function getSystems() {
       versions: {
         include: {
           dataStreamsSource: true,
+          dataStreamsRecipient: true,
         }
       },
       documents: true,
@@ -65,8 +66,9 @@ export async function getSystems() {
   
   return {
     systems: systems.map((system: any) => {
-      // Подсчет только исходящих потоков данных (WHERE version_id IN ...)
+      // Подсчет исходящих и входящих потоков данных
       const allOutgoingStreams = system.versions.flatMap((v: any) => v.dataStreamsSource || [])
+      const allIncomingStreams = system.versions.flatMap((v: any) => v.dataStreamsRecipient || [])
       
       return {
         id: system.systemId,
@@ -81,7 +83,9 @@ export async function getSystems() {
         _count: {
           versions: system.versions.length,
           documents: system.documents.length,
-          connections: allOutgoingStreams.length,
+          connections: allOutgoingStreams.length + allIncomingStreams.length,
+          outgoingConnections: allOutgoingStreams.length,
+          incomingConnections: allIncomingStreams.length,
         }
       }
     })

@@ -23,6 +23,8 @@ interface GraphvizCanvasProps {
     target: string
     label?: string
   }>
+  initialLayout?: 'dot' | 'neato' | 'fdp' | 'circo'
+  initialShowLabels?: boolean
   renderToolbar?: (controls: {
     layoutButton: React.ReactNode
     resetButton: React.ReactNode
@@ -32,11 +34,17 @@ interface GraphvizCanvasProps {
   }) => React.ReactNode
 }
 
-export default function GraphvizCanvas({ initialNodes, initialEdges, renderToolbar }: GraphvizCanvasProps) {
+export default function GraphvizCanvas({ 
+  initialNodes, 
+  initialEdges, 
+  initialLayout = 'dot', 
+  initialShowLabels = true,
+  renderToolbar 
+}: GraphvizCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [layout, setLayout] = useState<'dot' | 'neato' | 'fdp' | 'circo'>('dot')
-  const [showLabels, setShowLabels] = useState(true)
+  const [layout, setLayout] = useState<'dot' | 'neato' | 'fdp' | 'circo'>(initialLayout)
+  const [showLabels, setShowLabels] = useState(initialShowLabels)
   const [svgContent, setSvgContent] = useState<string>('')
 
   // Генерация DOT файла из данных

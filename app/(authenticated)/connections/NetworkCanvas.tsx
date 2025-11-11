@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiDownload, FiEdit2, FiTrash2 } from 'react-icons/fi'
-import { saveNetworkLayout, getMyNetworkLayouts, getPublicNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/lib/actions/layouts'
-import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/lib/graph-layout'
+import { saveNetworkLayout, getMyNetworkLayouts, getPublicNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
+import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/app/(authenticated)/connections/actions/graph-layout'
 
 interface NetworkNode {
   id: string
