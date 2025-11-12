@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FiEdit2, FiPlus, FiAlertCircle, FiSave, FiX } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
+import { updateSystem } from '../actions/updateSystem'
 
 interface SystemDetailViewProps {
   system: any
@@ -47,16 +48,10 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
   const handleSaveSystem = async () => {
     setIsSaving(true)
     try {
-      const response = await fetch(`/api/systems/${system.systemId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      })
+      const result = await updateSystem(system.systemId, formData)
 
-      if (!response.ok) {
-        throw new Error('Ошибка при обновлении системы')
+      if (!result.success) {
+        throw new Error(result.error || 'Ошибка при обновлении системы')
       }
 
       setIsEditingSystem(false)

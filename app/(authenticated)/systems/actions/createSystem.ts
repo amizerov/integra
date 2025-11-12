@@ -115,6 +115,7 @@ export async function getSystemById(id: number) {
 export async function createSystem(data: {
   systemName: string
   systemShortName?: string
+  systemPurpose?: string
   hasPersonalData?: boolean
   userId: number
 }) {
@@ -129,6 +130,7 @@ export async function createSystem(data: {
       systemId: nextId,
       systemName: data.systemName,
       systemShortName: data.systemShortName,
+      systemPurpose: data.systemPurpose,
       hasPersonalData: data.hasPersonalData ? 1 : 0,
       userId: data.userId,
       creationDate: new Date(),

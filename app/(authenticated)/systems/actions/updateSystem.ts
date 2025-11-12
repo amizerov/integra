@@ -9,6 +9,7 @@ export async function updateSystem(
   data: {
     systemName: string
     systemShortName: string
+    systemPurpose: string
     hasPersonalData: number
   }
 ) {
@@ -23,6 +24,7 @@ export async function updateSystem(
       data: {
         systemName: data.systemName,
         systemShortName: data.systemShortName,
+        systemPurpose: data.systemPurpose,
         hasPersonalData: data.hasPersonalData,
         lastChangeUser: Number(session.user.id),
         lastChangeDate: new Date(),

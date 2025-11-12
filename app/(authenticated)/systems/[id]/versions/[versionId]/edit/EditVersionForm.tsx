@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
+import { updateVersion } from '../../actions/updateVersion'
 
 interface EditVersionFormProps {
   systemId: number
@@ -53,22 +54,19 @@ export default function EditVersionForm({ systemId, version, userId }: EditVersi
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(`/api/systems/${systemId}/versions/${version.versionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const result = await updateVersion(
+        version.versionId,
+        systemId,
+        {
           ...formData,
           versionDevelopmentYear: formData.versionDevelopmentYear ? parseInt(formData.versionDevelopmentYear) : null,
           productionStartYear: formData.productionStartYear ? parseInt(formData.productionStartYear) : null,
           endOfUsageYear: formData.endOfUsageYear ? parseInt(formData.endOfUsageYear) : null,
-          userId,
-        }),
-      })
+        }
+      )
 
-      if (!response.ok) {
-        throw new Error('Ошибка при обновлении версии')
+      if (!result.success) {
+        throw new Error(result.error || 'Ошибка при обновлении версии')
       }
 
       router.push(`/systems/${systemId}/versions/${version.versionId}`)
