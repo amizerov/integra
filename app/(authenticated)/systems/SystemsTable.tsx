@@ -8,13 +8,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface SystemsTableProps {
   systems: any[]
 }
 
 export default function SystemsTable({ systems }: SystemsTableProps) {
+  const router = useRouter()
+
   const formatDate = (date: Date | null | undefined) => {
     if (!date) return '-'
     return new Date(date).toLocaleDateString('ru-RU', {
@@ -47,63 +49,44 @@ export default function SystemsTable({ systems }: SystemsTableProps) {
               <TableRow
                 key={system.id}
                 className="cursor-pointer hover:bg-accent"
+                onClick={() => router.push(`/systems/${system.id}`)}
               >
                 <TableCell className="font-medium">
-                  <Link href={`/systems/${system.id}`} className="block">
-                    <div className="flex items-center gap-2">
-                      {system.systemId}
-                      {system.hasPersonalData === 1 && (
-                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded" title="Содержит персональные данные">
-                          ⚠
-                        </span>
-                      )}
-                    </div>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {system.systemId}
+                    {system.hasPersonalData === 1 && (
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded" title="Содержит персональные данные">
+                        ⚠
+                      </span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <Link href={`/systems/${system.id}`} className="block">
-                    <div className="font-medium">{system.systemName}</div>
-                  </Link>
+                  <div className="font-medium">{system.systemName}</div>
                 </TableCell>
-                <TableCell>
-                  <Link href={`/systems/${system.id}`} className="block text-muted-foreground">
-                    {system.systemShortName || '-'}
-                  </Link>
+                <TableCell className="text-muted-foreground">
+                  {system.systemShortName || '-'}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Link href={`/systems/${system.id}`} className="block">
-                    {system._count.versions}
-                  </Link>
+                  {system._count.versions}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Link href={`/systems/${system.id}`} className="block">
-                    {system._count.connections}
-                  </Link>
+                  {system._count.connections}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Link href={`/systems/${system.id}`} className="block">
-                    {system._count.documents}
-                  </Link>
+                  {system._count.documents}
                 </TableCell>
-                <TableCell>
-                  <Link href={`/systems/${system.id}`} className="block text-sm truncate">
-                    {system.createdBy || '-'}
-                  </Link>
+                <TableCell className="text-sm truncate">
+                  {system.createdBy || '-'}
                 </TableCell>
-                <TableCell>
-                  <Link href={`/systems/${system.id}`} className="block text-sm text-muted-foreground">
-                    {formatDate(system.createdAt)}
-                  </Link>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDate(system.createdAt)}
                 </TableCell>
-                <TableCell>
-                  <Link href={`/systems/${system.id}`} className="block text-sm truncate">
-                    {system.modifiedBy || '-'}
-                  </Link>
+                <TableCell className="text-sm truncate">
+                  {system.modifiedBy || '-'}
                 </TableCell>
-                <TableCell>
-                  <Link href={`/systems/${system.id}`} className="block text-sm text-muted-foreground">
-                    {formatDate(system.modifiedAt)}
-                  </Link>
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDate(system.modifiedAt)}
                 </TableCell>
               </TableRow>
             ))

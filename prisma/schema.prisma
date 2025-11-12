@@ -19,6 +19,7 @@ model AllowedUser {
   isActive                     Int?                @map("is_active")
   comment                      String?             @db.VarChar(255)
   createdSystems               InformationSystem[] @relation("SystemCreator")
+  modifiedSystems              InformationSystem[] @relation("SystemModifier")
   createdVersions              SystemVersion[]     @relation("VersionCreator")
   modifiedVersions             SystemVersion[]     @relation("VersionModifier")
   intgr3_managing_documents    ManagingDocument[]
@@ -36,12 +37,14 @@ model InformationSystem {
   systemId        Int                @id @map("system_id")
   systemShortName String?            @map("system_short_name") @db.VarChar(64)
   systemName      String?            @map("system_name") @db.VarChar(255)
+  systemPurpose   String?            @map("system_purpose") @db.VarChar(1000)
   hasPersonalData Int?               @map("has_personal_data")
   userId          Int?               @map("user_id")
   creationDate    DateTime?          @map("creation_date") @db.Timestamp(6)
   lastChangeUser  Int?               @map("last_change_user")
   lastChangeDate  DateTime?          @map("last_change_date") @db.Timestamp(6)
   creator         AllowedUser?       @relation("SystemCreator", fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_26")
+  modifier        AllowedUser?       @relation("SystemModifier", fields: [lastChangeUser], references: [userId], onDelete: NoAction, onUpdate: NoAction)
   versions        SystemVersion[]
   documents       ManagingDocument[]
 

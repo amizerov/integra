@@ -93,7 +93,7 @@ export default function EditVersionForm({ systemId, version, userId }: EditVersi
           <CardTitle>Основная информация</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="versionCode">Код версии</Label>
               <Input

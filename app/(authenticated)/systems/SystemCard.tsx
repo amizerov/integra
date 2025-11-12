@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface SystemCardProps {
   system: {
@@ -25,9 +25,13 @@ interface SystemCardProps {
 }
 
 export default function SystemCard({ system }: SystemCardProps) {
+  const router = useRouter()
+
   return (
-    <Link href={`/systems/${system.id}`}>
-      <Card className="hover:shadow-lg transition-all cursor-pointer h-full">
+    <Card 
+      className="hover:shadow-lg transition-all cursor-pointer h-full"
+      onClick={() => router.push(`/systems/${system.id}`)}
+    >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
@@ -75,6 +79,5 @@ export default function SystemCard({ system }: SystemCardProps) {
           )}
         </CardContent>
       </Card>
-    </Link>
   )
 }

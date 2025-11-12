@@ -54,4 +54,3 @@ export async function registerUser(formData: FormData) {
     message: 'Регистрация успешна! Теперь вы можете войти в систему.' 
   }
 }
-
