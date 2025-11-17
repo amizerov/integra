@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { FiEdit2, FiPlus, FiAlertCircle, FiSave, FiX } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
 import { updateSystem } from '../actions/updateSystem'
+import Version from './Version'
 
 interface SystemDetailViewProps {
   system: any
@@ -16,7 +17,7 @@ interface SystemDetailViewProps {
 
 export default function SystemDetailView({ system }: SystemDetailViewProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'info' | 'versions' | 'documents' | 'connections'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'versions' | 'documents'>('info')
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0)
   const [isEditingSystem, setIsEditingSystem] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -31,7 +32,6 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
     { id: 'info' as const, label: 'Общая информация' },
     { id: 'versions' as const, label: 'Версии' },
     { id: 'documents' as const, label: 'Документы' },
-    { id: 'connections' as const, label: 'Связи' },
   ]
 
   const formatDate = (date: Date | null | undefined) => {
@@ -244,182 +244,53 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
       )}
 
       {activeTab === 'versions' && (
-        <div className="space-y-6">
-          {system.versions.length === 1 ? (
-            // Single version - show card directly
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Версия {system.versions[0].versionCode || '1'}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Link href={`/systems/${system.systemId}/versions/${system.versions[0].versionId}/edit`}>
-                      <Button variant="outline" size="sm">
-                        <FiEdit2 className="h-4 w-4 mr-2" />
-                        Редактировать
-                      </Button>
-                    </Link>
-                    <Button size="sm">
-                      <FiPlus className="h-4 w-4 mr-2" />
-                      Добавить ещё версию
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Код версии</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].versionCode || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Подразделение-оператор</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].operatingUnit || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Год разработки</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].versionDevelopmentYear || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Подразделение-эксплуатант</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].technicalSupportUnit || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Год начала эксплуатации</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].productionStartYear || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Место размещения</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].operatingPlace || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Год окончания</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].endOfUsageYear || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Средства разработки</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].programmingTools || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Организация-разработчик</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].developingOrganization || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Среда функционирования</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].operatingEnvironment || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Подразделение-разработчик</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].developingUnit || '-'}</p>
-                  </div>
-                  {system.versions[0].versionComment && (
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Комментарий</label>
-                      <p className="mt-0.5 text-sm">{system.versions[0].versionComment}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Авторский коллектив</label>
-                    <p className="mt-0.5 text-sm">{system.versions[0].versionAuthors || '-'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            // Multiple versions - show timeline + selected version
-            <div className="space-y-4">
-              {/* Version Timeline */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-6">
+          {/* Version Tabs - Left Side */}
+          {system.versions && system.versions.length > 0 && (
+            <div className="w-48 shrink-0">
+              <div className="space-y-2">
                 {system.versions.map((version: any, index: number) => (
-                  <Button
+                  <button
                     key={version.versionId}
-                    variant={index === selectedVersionIndex ? 'default' : 'outline'}
-                    size="sm"
-                    className="whitespace-nowrap"
                     onClick={() => setSelectedVersionIndex(index)}
+                    className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      index === selectedVersionIndex
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80 text-foreground'
+                    }`}
                   >
                     Версия {version.versionCode || index + 1}
-                  </Button>
+                  </button>
                 ))}
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="w-full">
                   <FiPlus className="h-4 w-4 mr-2" />
-                  Добавить версию
+                  Добавить
                 </Button>
               </div>
+            </div>
+          )}
 
-              {/* Selected Version Card */}
+          {/* Version Content - Right Side */}
+          <div className="flex-1">
+            {system.versions && system.versions.length > 0 ? (
+              <Version 
+                version={system.versions[selectedVersionIndex]} 
+                systemId={system.systemId}
+              />
+            ) : (
               <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Версия {system.versions[selectedVersionIndex].versionCode || selectedVersionIndex + 1}</CardTitle>
-                    <Link href={`/systems/${system.systemId}/versions/${system.versions[selectedVersionIndex].versionId}/edit`}>
-                      <Button variant="outline" size="sm">
-                        <FiEdit2 className="h-4 w-4 mr-2" />
-                        Редактировать
-                      </Button>
-                    </Link>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Код версии</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].versionCode || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Подразделение-оператор</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].operatingUnit || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Год разработки</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].versionDevelopmentYear || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Подразделение-эксплуатант</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].technicalSupportUnit || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Год начала эксплуатации</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].productionStartYear || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Место размещения</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].operatingPlace || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Год окончания</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].endOfUsageYear || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Средства разработки</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].programmingTools || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Организация-разработчик</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].developingOrganization || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Среда функционирования</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].operatingEnvironment || '-'}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Подразделение-разработчик</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].developingUnit || '-'}</p>
-                    </div>
-                    {system.versions[selectedVersionIndex].versionComment && (
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground">Комментарий</label>
-                        <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].versionComment}</p>
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground">Авторский коллектив</label>
-                      <p className="mt-0.5 text-sm">{system.versions[selectedVersionIndex].versionAuthors || '-'}</p>
-                    </div>
+                <CardContent className="py-12">
+                  <div className="text-center">
+                    <p className="text-muted-foreground mb-4">Нет версий</p>
+                    <Button size="sm">
+                      <FiPlus className="h-4 w-4 mr-2" />
+                      Добавить первую версию
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -428,16 +299,6 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
           <CardContent className="py-12">
             <p className="text-center text-muted-foreground">
               Документов: {system._count?.documents || 0}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === 'connections' && (
-        <Card>
-          <CardContent className="py-12">
-            <p className="text-center text-muted-foreground">
-              Раздел в разработке
             </p>
           </CardContent>
         </Card>

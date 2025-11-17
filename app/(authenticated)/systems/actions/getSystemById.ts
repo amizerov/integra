@@ -24,14 +24,18 @@ export async function getSystemById(systemId: number) {
           include: {
             creator: {
               select: {
+                userId: true,
                 fio: true,
               },
             },
             modifier: {
               select: {
+                userId: true,
                 fio: true,
               },
             },
+            userGuides: true,
+            schemas: true,
             dataStreamsSource: true,
             dataStreamsRecipient: true,
           },
