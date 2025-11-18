@@ -198,28 +198,7 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
                 </div>
               </div>
 
-              {/* Column 2 - System Purpose */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="systemPurpose" className="text-sm font-medium text-muted-foreground">
-                    Краткое описание / цель
-                  </Label>
-                  {isEditingSystem ? (
-                    <textarea
-                      id="systemPurpose"
-                      value={formData.systemPurpose}
-                      onChange={(e) => setFormData(prev => ({ ...prev, systemPurpose: e.target.value }))}
-                      rows={8}
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-                      placeholder="Краткое описание системы и её цели..."
-                    />
-                  ) : (
-                    <p className="mt-1 text-foreground whitespace-pre-wrap">{system.systemPurpose || '-'}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Column 3 - Metadata */}
+              {/* Column 2 - Metadata */}
               <div className="space-y-4 text-sm">
                 <div>
                   <label className="text-muted-foreground">ID системы</label>
@@ -238,6 +217,30 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
                   </p>
                 </div>
               </div>
+
+              {/* Column 3 - Empty for now */}
+              <div></div>
+            </div>
+
+            {/* System Purpose - Full Width Below */}
+            <div className="mt-6 pt-6 border-t">
+              <div>
+                <Label htmlFor="systemPurpose" className="text-sm font-medium text-muted-foreground">
+                  Описание / назначение системы
+                </Label>
+                {isEditingSystem ? (
+                  <textarea
+                    id="systemPurpose"
+                    value={formData.systemPurpose}
+                    onChange={(e) => setFormData(prev => ({ ...prev, systemPurpose: e.target.value }))}
+                    rows={12}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
+                    placeholder="Описание и назначение системы..."
+                  />
+                ) : (
+                  <p className="mt-1 text-foreground whitespace-pre-wrap min-h-[300px]">{system.systemPurpose || '-'}</p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -247,26 +250,24 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
         <div className="flex gap-6">
           {/* Version Tabs - Left Side */}
           {system.versions && system.versions.length > 0 && (
-            <div className="w-48 shrink-0">
-              <div className="space-y-2">
-                {system.versions.map((version: any, index: number) => (
-                  <button
-                    key={version.versionId}
-                    onClick={() => setSelectedVersionIndex(index)}
-                    className={`w-full text-left px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      index === selectedVersionIndex
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted hover:bg-muted/80 text-foreground'
-                    }`}
-                  >
-                    Версия {version.versionCode || index + 1}
-                  </button>
-                ))}
-                <Button size="sm" variant="outline" className="w-full">
-                  <FiPlus className="h-4 w-4 mr-2" />
-                  Добавить
-                </Button>
-              </div>
+            <div className="shrink-0 flex flex-col gap-2">
+              {system.versions.map((version: any, index: number) => (
+                <button
+                  key={version.versionId}
+                  onClick={() => setSelectedVersionIndex(index)}
+                  className={`text-left px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                    index === selectedVersionIndex
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted hover:bg-muted/80 text-foreground'
+                  }`}
+                >
+                  Версия {version.versionCode || index + 1}
+                </button>
+              ))}
+              <Button size="sm" variant="outline" className="whitespace-nowrap">
+                <FiPlus className="h-4 w-4 mr-2" />
+                Добавить
+              </Button>
             </div>
           )}
 

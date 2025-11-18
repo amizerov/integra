@@ -11,10 +11,11 @@ interface VersionProps {
 }
 
 export default function Version({ version, systemId }: VersionProps) {
-  const [activeTab, setActiveTab] = useState<'info' | 'technical' | 'documents' | 'connections'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'organizational' | 'technical' | 'documents' | 'connections'>('info')
 
   const versionTabs = [
     { id: 'info' as const, label: 'Общая информация' },
+    { id: 'organizational' as const, label: 'Организационная информация' },
     { id: 'technical' as const, label: 'Техническая информация' },
     { id: 'documents' as const, label: 'Документы' },
     { id: 'connections' as const, label: 'Связи' },
@@ -109,30 +110,6 @@ export default function Version({ version, systemId }: VersionProps) {
             </div>
 
             <div className="pt-4 border-t">
-              <h3 className="text-sm font-semibold mb-3">Организационная информация</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Организация-разработчик</label>
-                  <div className="p-2 border rounded-md bg-muted/50">
-                    {version.developingOrganization || '—'}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Подразделение-разработчик</label>
-                  <div className="p-2 border rounded-md bg-muted/50">
-                    {version.developingUnit || '—'}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Авторский коллектив</label>
-                  <div className="p-2 border rounded-md bg-muted/50">
-                    {version.versionAuthors || '—'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
               <h3 className="text-sm font-semibold mb-3">Служебная информация</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -169,6 +146,34 @@ export default function Version({ version, systemId }: VersionProps) {
                     {formatDate(version.lastChangeDate)}
                   </div>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'organizational' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Организационная информация</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Организация-разработчик</label>
+              <div className="p-2 border rounded-md bg-muted/50">
+                {version.developingOrganization || '—'}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Подразделение-разработчик</label>
+              <div className="p-2 border rounded-md bg-muted/50">
+                {version.developingUnit || '—'}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Авторский коллектив</label>
+              <div className="p-2 border rounded-md bg-muted/50">
+                {version.versionAuthors || '—'}
               </div>
             </div>
           </CardContent>

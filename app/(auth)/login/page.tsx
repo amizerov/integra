@@ -9,9 +9,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import toast from 'react-hot-toast'
+import { useTheme } from '@/contexts/ThemeContext'
+import { FiSun, FiMoon } from 'react-icons/fi'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -44,15 +47,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative">
+      {/* Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+        aria-label="Переключить тему"
+      >
+        {theme === 'light' ? (
+          <FiMoon className="h-5 w-5" />
+        ) : (
+          <FiSun className="h-5 w-5" />
+        )}
+      </button>
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
-              <span className="text-primary-foreground font-bold text-2xl">НИВЦ</span>
-            </div>
-            <h1 className="text-2xl font-bold">АИС Интеграция НИВЦ</h1>
+            <img 
+              src={theme === 'dark' ? '/rcc.png' : '/rcc.webp'} 
+              alt="НИВЦ Логотип" 
+              width={75}
+              className="mx-auto rounded-lg" 
+            />
+            <h1 className="text-2xl font-bold">АИС «Интеграция»</h1>
             <p className="text-sm text-muted-foreground">
               Система регистрации АИС НИВЦ МГУ
             </p>

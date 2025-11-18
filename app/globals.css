@@ -46,7 +46,7 @@
 
 /* Темная тема */
 .dark {
-  --color-background: oklch(0.13 0.028 261.692);
+  --color-background: oklch(0.24 0.054 245);
   --color-foreground: oklch(0.985 0.002 247.839);
   
   --color-card: oklch(0.21 0.034 264.665);
