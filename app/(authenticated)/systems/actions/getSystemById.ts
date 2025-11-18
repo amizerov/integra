@@ -34,7 +34,17 @@ export async function getSystemById(systemId: number) {
                 fio: true,
               },
             },
-            userGuides: true,
+            userGuides: {
+              include: {
+                intgr4_document_full_text: {
+                  select: {
+                    fileName: true,
+                    fileExtension: true,
+                    fileSize: true,
+                  }
+                }
+              }
+            },
             schemas: true,
             dataStreamsSource: true,
             dataStreamsRecipient: true,
