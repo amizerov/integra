@@ -261,12 +261,13 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
                       : 'bg-muted hover:bg-muted/80 text-foreground'
                   }`}
                 >
-                  Версия {version.versionCode || index + 1}
+                  <span className="hidden lg:inline">Версия {version.versionCode || index + 1}</span>
+                  <span className="lg:hidden">{version.versionCode || index + 1}</span>
                 </button>
               ))}
               <Button size="sm" variant="outline" className="whitespace-nowrap">
-                <FiPlus className="h-4 w-4 mr-2" />
-                Добавить
+                <FiPlus className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Добавить</span>
               </Button>
             </div>
           )}
