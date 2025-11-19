@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/db'
 
-export async function getMyNetworkLayouts() {
+export async function getAllNetworkLayouts() {
   try {
     // Показываем все карты связей всех пользователей (без проверки авторизации)
     const layouts = await prisma.networkLayout.findMany({

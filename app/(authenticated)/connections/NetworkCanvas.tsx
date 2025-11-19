@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiDownload, FiEdit2, FiTrash2 } from 'react-icons/fi'
-import { saveNetworkLayout, getMyNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
+import { saveNetworkLayout, getAllNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
 import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/app/(authenticated)/connections/actions/graph-layout'
 
 interface NetworkNode {
@@ -585,7 +585,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
 
   // Загрузить список схем
   const handleOpenLoadDialog = useCallback(async () => {
-    const layouts = await getMyNetworkLayouts()
+    const layouts = await getAllNetworkLayouts()
     setSavedLayouts(layouts)
     setShowLoadDialog(true)
   }, [])
@@ -664,7 +664,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
       setShowEditDialog(false)
       setEditingLayout(null)
       // Обновляем список
-      const layouts = await getMyNetworkLayouts()
+      const layouts = await getAllNetworkLayouts()
       setSavedLayouts(layouts)
       setShowLoadDialog(true)
     } else {
@@ -683,7 +683,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
     if (result.success) {
       alert('Схема удалена!')
       // Обновляем список
-      const layouts = await getMyNetworkLayouts()
+      const layouts = await getAllNetworkLayouts()
       setSavedLayouts(layouts)
     } else {
       alert(result.error || 'Ошибка удаления')

@@ -1,7 +1,6 @@
 'use server'
 
 import prisma from '@/lib/db'
-import { auth } from '@/lib/auth'
 
 interface LayoutNode {
   id: string
@@ -17,8 +16,6 @@ interface LayoutData {
 
 export async function getNetworkLayout(layoutId: number) {
   try {
-    const session = await auth()
-    
     const layout = await prisma.networkLayout.findUnique({
       where: { id: layoutId },
       include: {
@@ -34,15 +31,7 @@ export async function getNetworkLayout(layoutId: number) {
       return null
     }
 
-    // Проверяем доступ
-    const hasAccess = 
-      layout.isPublic || 
-      (session?.user?.id && layout.userId === Number(session.user.id))
-
-    if (!hasAccess) {
-      return null
-    }
-
+    // Все карты доступны всем пользователям
     return {
       ...layout,
       layoutData: JSON.parse(layout.layoutData) as LayoutData,
@@ -52,3 +41,4 @@ export async function getNetworkLayout(layoutId: number) {
     return null
   }
 }
+
