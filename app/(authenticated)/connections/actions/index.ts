@@ -8,3 +8,5 @@ export { getMyNetworkLayouts } from './getMyNetworkLayouts'
 export { getPublicNetworkLayouts } from './getPublicNetworkLayouts'
 export { getNetworkLayout } from './getNetworkLayout'
 export { deleteNetworkLayout } from './deleteNetworkLayout'
+export { generateDotContent, saveDotFile, deleteDotFile } from './generateDotFile'
+

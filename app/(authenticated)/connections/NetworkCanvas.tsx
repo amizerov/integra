@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiDownload, FiEdit2, FiTrash2 } from 'react-icons/fi'
-import { saveNetworkLayout, getMyNetworkLayouts, getPublicNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
+import { saveNetworkLayout, getMyNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
 import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/app/(authenticated)/connections/actions/graph-layout'
 
 interface NetworkNode {
@@ -86,8 +86,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
   const [showLoadDialog, setShowLoadDialog] = useState(false)
   const [layoutName, setLayoutName] = useState('')
   const [layoutDescription, setLayoutDescription] = useState('')
-  const [savedLayouts, setSavedLayouts] = useState<any[]>([])
-  const [publicLayouts, setPublicLayouts] = useState<any[]>([])
+  const [savedLayouts, setSavedLayouts] = useState<any[]>([])  
   const [editingLayout, setEditingLayout] = useState<any>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editName, setEditName] = useState('')
@@ -586,12 +585,8 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
 
   // Загрузить список схем
   const handleOpenLoadDialog = useCallback(async () => {
-    const [myLayouts, pubLayouts] = await Promise.all([
-      getMyNetworkLayouts(),
-      getPublicNetworkLayouts(),
-    ])
-    setSavedLayouts(myLayouts)
-    setPublicLayouts(pubLayouts)
+    const layouts = await getMyNetworkLayouts()
+    setSavedLayouts(layouts)
     setShowLoadDialog(true)
   }, [])
 
@@ -669,12 +664,8 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
       setShowEditDialog(false)
       setEditingLayout(null)
       // Обновляем список
-      const [myLayouts, pubLayouts] = await Promise.all([
-        getMyNetworkLayouts(),
-        getPublicNetworkLayouts(),
-      ])
-      setSavedLayouts(myLayouts)
-      setPublicLayouts(pubLayouts)
+      const layouts = await getMyNetworkLayouts()
+      setSavedLayouts(layouts)
       setShowLoadDialog(true)
     } else {
       alert(result.error || 'Ошибка обновления')
@@ -692,12 +683,8 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
     if (result.success) {
       alert('Схема удалена!')
       // Обновляем список
-      const [myLayouts, pubLayouts] = await Promise.all([
-        getMyNetworkLayouts(),
-        getPublicNetworkLayouts(),
-      ])
-      setSavedLayouts(myLayouts)
-      setPublicLayouts(pubLayouts)
+      const layouts = await getMyNetworkLayouts()
+      setSavedLayouts(layouts)
     } else {
       alert(result.error || 'Ошибка удаления')
     }
@@ -706,6 +693,36 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative h-[calc(100vh-11rem)]'}`}>
       <Card className={`w-full h-full overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`}>
+        {/* Панель управления в полноэкранном режиме */}
+        {isFullscreen && (
+          <div className="absolute top-4 right-4 z-20 flex gap-2 bg-card/95 backdrop-blur-sm p-2 rounded-lg border border-border shadow-lg">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsFullscreen(false)}
+              title="Выйти из полноэкранного режима"
+            >
+              <FiMinimize2 className="h-4 w-4" />
+              <span className="ml-2">Выйти</span>
+            </Button>
+            <Button size="sm" variant="outline" onClick={resetLayout} title="Сбросить расположение">
+              <FiRefreshCw className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setZoom(prev => Math.min(3, prev * 1.2))} title="Увеличить">
+              <FiPlus className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setZoom(prev => Math.max(0.1, prev * 0.8))} title="Уменьшить">
+              <FiMinus className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowSaveDialog(true)} title="Сохранить схему">
+              <FiSave className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleOpenLoadDialog} title="Загрузить схему">
+              <FiDownload className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
         {/* Toolbar будет рендериться через renderToolbar prop */}
         {renderToolbar && renderToolbar({
           filterButton: (
@@ -783,8 +800,9 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
             </Button>
           ),
           fullscreenButton: (
-            <Button size="sm" variant="outline" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Выйти" : "Полный экран"}>
+            <Button size="sm" variant="outline" onClick={() => setIsFullscreen(!isFullscreen)} title={isFullscreen ? "Выйти из полноэкранного режима" : "Полноэкранный режим"}>
               {isFullscreen ? <FiMinimize2 className="h-4 w-4" /> : <FiMaximize2 className="h-4 w-4" />}
+              {isFullscreen && <span className="ml-2 hidden lg:inline">Выйти</span>}
             </Button>
           ),
           saveButton: (
@@ -1100,96 +1118,64 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
         <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
           <DialogContent className="sm:max-w-[700px] max-h-[85vh]">
             <DialogHeader>
-              <DialogTitle>Управление схемами</DialogTitle>
+              <DialogTitle>Управление картами связей систем</DialogTitle>
               <DialogDescription>
-                Загрузка, редактирование и удаление сохранённых схем
+                Загрузка, редактирование и удаление сохранённых карт
               </DialogDescription>
             </DialogHeader>
             <div className="overflow-y-auto max-h-[calc(85vh-180px)] pr-2">
-              {savedLayouts.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium mb-3">Мои схемы</h4>
-                  <div className="space-y-2">
-                    {savedLayouts.map((layout) => (
-                      <div
-                        key={layout.id}
-                        className="p-3 border border-border rounded hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleLoadLayout(layout.id)}>
-                            <div className="font-medium truncate">{layout.name}</div>
-                            {layout.description && (
-                              <div className="text-sm text-muted-foreground truncate">{layout.description}</div>
-                            )}
-                            <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                              <div>Создана: {new Date(layout.createdAt).toLocaleString('ru-RU')}</div>
-                              <div>Изменена: {new Date(layout.updatedAt).toLocaleString('ru-RU')}</div>
-                              {layout.isPublic && (
-                                <div className="text-primary font-medium">Публичная схема</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleEditLayout(layout)
-                              }}
-                              title="Редактировать"
-                              className="h-8 w-8 p-0"
-                            >
-                              <FiEdit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteLayout(layout.id)
-                              }}
-                              title="Удалить"
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <FiTrash2 className="h-4 w-4" />
-                            </Button>
+              {savedLayouts.length > 0 ? (
+                <div className="space-y-2">
+                  {savedLayouts.map((layout) => (
+                    <div
+                      key={layout.id}
+                      className="p-3 border border-border rounded hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleLoadLayout(layout.id)}>
+                          <div className="font-medium truncate">{layout.name}</div>
+                          {layout.description && (
+                            <div className="text-sm text-muted-foreground truncate">{layout.description}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                            <div>Автор: {layout.user?.fio || 'Неизвестен'}</div>
+                            <div>Создана: {new Date(layout.createdAt).toLocaleString('ru-RU')}</div>
+                            <div>Изменена: {new Date(layout.updatedAt).toLocaleString('ru-RU')}</div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {publicLayouts.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-3">Публичные схемы</h4>
-                  <div className="space-y-2">
-                    {publicLayouts.map((layout) => (
-                      <div
-                        key={layout.id}
-                        className="p-3 border border-border rounded hover:bg-accent cursor-pointer transition-colors"
-                        onClick={() => handleLoadLayout(layout.id)}
-                      >
-                        <div className="font-medium">{layout.name}</div>
-                        {layout.description && (
-                          <div className="text-sm text-muted-foreground">{layout.description}</div>
-                        )}
-                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                          <div>Автор: {layout.user.fio}</div>
-                          <div>Создана: {new Date(layout.createdAt).toLocaleString('ru-RU')}</div>
-                          <div>Изменена: {new Date(layout.updatedAt).toLocaleString('ru-RU')}</div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditLayout(layout)
+                            }}
+                            title="Редактировать"
+                            className="h-8 w-8 p-0"
+                          >
+                            <FiEdit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteLayout(layout.id)
+                            }}
+                            title="Удалить"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <FiTrash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {savedLayouts.length === 0 && publicLayouts.length === 0 && (
+              ) : (
                 <div className="text-center text-muted-foreground py-12">
-                  Сохранённых схем пока нет
+                  Сохранённых карт пока нет
                 </div>
               )}
             </div>

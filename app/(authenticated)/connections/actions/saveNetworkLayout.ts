@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { saveDotFile } from './generateDotFile'
 
 interface LayoutNode {
   id: string
@@ -38,6 +39,13 @@ export async function saveNetworkLayout(
     })
 
     console.log('Layout saved:', layout.id)
+    
+    // Сохраняем DOT файл в public/graphviz
+    const dotResult = await saveDotFile(layout.id, name)
+    if (!dotResult.success) {
+      console.warn('Failed to save DOT file:', dotResult.error)
+    }
+    
     return { success: true, layoutId: layout.id }
   } catch (error) {
     console.error('Error saving layout:', error)

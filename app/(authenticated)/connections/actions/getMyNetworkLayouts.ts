@@ -10,10 +10,8 @@ export async function getMyNetworkLayouts() {
       return []
     }
 
+    // Показываем все карты связей всех пользователей
     const layouts = await prisma.networkLayout.findMany({
-      where: {
-        userId: Number(session.user.id),
-      },
       orderBy: {
         updatedAt: 'desc',
       },
@@ -24,6 +22,12 @@ export async function getMyNetworkLayouts() {
         isPublic: true,
         createdAt: true,
         updatedAt: true,
+        userId: true,
+        user: {
+          select: {
+            fio: true,
+          },
+        },
       },
     })
 

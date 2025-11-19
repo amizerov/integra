@@ -1,0 +1,137 @@
+digraph NetworkGraph {
+  // Graph attributes
+  rankdir=TB;
+  bgcolor="#ffffff";
+  fontname="Arial";
+  fontsize=12;
+  
+  // Node defaults
+  node [
+    fontname="Arial",
+    fontsize=12,
+    color="#3b82f6",
+    fillcolor="#dbeafe",
+    style="filled,rounded"
+  ];
+  
+  // Edge defaults
+  edge [
+    fontname="Arial",
+    fontsize=10,
+    color="#64748b"
+  ];
+  
+  // Nodes
+  "2" [label="Веб-анкета", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "1" [label="Абитуриент", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "14" [label="ФизЛицо", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "13" [label="ДисСовет", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "5" [label="Студент", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "6" [label="Педнагрузка", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "9" [label="Истина", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "7" [label="УПлан", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "8" [label="АИС ГИА", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "10" [label="exam.msu.ru", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "4" [label="Медосмотр", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "11" [label="НЦТППРТ", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "12" [label="Аспирант", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "16" [label="Кадры", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "15" [label="ШР", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "17" [label="Зарплата-Центр", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "19" [label="phd.msu.ru", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "20" [label="elk.msu.ru", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "18" [label="lk.msu.ru", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "21" [label="dissovet.msu.ru", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "22" [label="distant.msu.ru", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "23" [label="ЭЦП", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "3" [label="Экзамен", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "24" [label="Переводы", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "26" [label="ЕРП", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "27" [label="Система прав", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "28" [label="СКУД ОДД МГУ", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "25" [label="ФИС ГИА", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  "29" [label="ССПВО", shape=box, style="filled,rounded", fillcolor="#dbeafe", color="#3b82f6"];
+  
+  // Edges
+  "2" -> "1" [label="Приоритеты"];
+  "2" -> "1" [label="Согласие на зачисление"];
+  "14" -> "13" [label="Данные аспирантов (соискателей)"];
+  "2" -> "1" [label="Заявление абитуриента"];
+  "1" -> "2" [label="Подтверждение импорта анкеты"];
+  "1" -> "5" [label="Зачисленные"];
+  "6" -> "9" [label="Педагогическая нагрузка"];
+  "5" -> "6" [label="Студенческие группы"];
+  "7" -> "5" [label="Учебные планы"];
+  "7" -> "6" [label="Классификатор предметов"];
+  "7" -> "8" [label="Список специальностей"];
+  "6" -> "8" [label="Данные о преподавателях"];
+  "1" -> "10" [label="Полный список абитуриентов"];
+  "10" -> "1" [label="Списки явившихся на экзамен"];
+  "10" -> "1" [label="Экзаменационные оценки"];
+  "2" -> "10" [label="OAuth2-авторизация"];
+  "1" -> "4" [label="Данные о зачисленных"];
+  "11" -> "1" [label="Список абитуриентов филиала в Душанбе"];
+  "1" -> "11" [label="Оценки за два экзамена"];
+  "11" -> "1" [label="Оценки НЦТППРТ и признак зачисления"];
+  "1" -> "10" [label="Списки абитуриентов на экзамен"];
+  "2" -> "12" [label="Заявления в аспирантуру"];
+  "5" -> "14" [label="Студенты"];
+  "12" -> "14" [label="Аспиранты"];
+  "16" -> "14" [label="Сотрудники"];
+  "15" -> "16" [label="Штатное расписание"];
+  "16" -> "17" [label="Данные сотрудников"];
+  "16" -> "17" [label="Кадровые движения"];
+  "12" -> "19" [label="Данные аспирантов"];
+  "19" -> "12" [label="Запись на спецкурсы"];
+  "20" -> "16" [label="Запрос на получение данных"];
+  "16" -> "20" [label="Данные сотрудников для проверки"];
+  "20" -> "16" [label="Запрос на получение справок"];
+  "16" -> "20" [label="Справки с ЭЦП"];
+  "20" -> "17" [label="Запрос на получение расчетных листков"];
+  "17" -> "20" [label="Расчетные листки"];
+  "5" -> "18" [label="Контингент студентов"];
+  "5" -> "18" [label="Оценки студентов"];
+  "6" -> "18" [label="Контингент преподавателей"];
+  "6" -> "18" [label="Педагогическая нагрузка"];
+  "18" -> "5" [label="Оценки за МФК"];
+  "9" -> "14" [label="Запрос на подтверждение"];
+  "14" -> "9" [label="Подтверждение данных участников конкурса"];
+  "13" -> "21" [label="Объявления о защитах"];
+  "18" -> "22" [label="Авторизация по OAuth2"];
+  "22" -> "18" [label="Оценки за МФК в дистанционной форме"];
+  "13" -> "14" [label="Запрос на получение данных аспирантов"];
+  "16" -> "23" [label="Форма справки"];
+  "23" -> "16" [label="Справка с ЭЦП"];
+  "12" -> "23" [label="Форма справки"];
+  "23" -> "16" [label="Справка с ЭЦП"];
+  "14" -> "13" [label="Данные аспиранта для диссовета"];
+  "14" -> "5" [label="Шестизнаки студентов"];
+  "14" -> "16" [label="Шестизнаки сотрудников"];
+  "14" -> "12" [label="Шестизнаки аспирантов"];
+  "1" -> "3" [label="Списки абитурентов на экзамен"];
+  "5" -> "1" [label="Средний балл бакалавров"];
+  "5" -> "24" [label="Проекты переводов названий"];
+  "24" -> "5" [label="Утвержденные переводы названий"];
+  "14" -> "18" [label="Список подразделений"];
+  "15" -> "14" [label="Список структурных подразделений"];
+  "26" -> "27" [label="Структура прав на системы"];
+  "12" -> "26" [label="Запрос на подтверждение прав"];
+  "26" -> "12" [label="Подтверждение прав пользователя"];
+  "13" -> "26" [label="Запрос на подтверждение прав"];
+  "26" -> "13" [label="Подтверждение прав"];
+  "15" -> "26" [label="Запрос на подтверждение прав"];
+  "26" -> "15" [label="Подтверждение прав"];
+  "16" -> "26" [label="Запрос на подтверждение прав"];
+  "26" -> "16" [label="Подтверждение прав"];
+  "28" -> "26" [label="Запрос на подтверждение прав"];
+  "26" -> "28" [label="Подтверждение прав"];
+  "1" -> "25" [label="Структура приема"];
+  "1" -> "25" [label="Заявления абитуриентов"];
+  "1" -> "25" [label="Приказы о зачислении"];
+  "29" -> "2" [label="Заявления абитуриентов с ЕПГУ"];
+  "29" -> "2" [label="Согласия на зачисление"];
+  "1" -> "29" [label="Структура приема"];
+  "2" -> "29" [label="Заявления, поданные в МГУ"];
+  "1" -> "29" [label="Приказы о зачислении"];
+  "1" -> "29" [label="Конкурсные списки"];
+}

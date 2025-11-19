@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { saveDotFile } from './generateDotFile'
 
 interface LayoutNode {
   id: string
@@ -48,6 +49,13 @@ export async function updateNetworkLayout(
     })
 
     console.log('Layout updated:', layout.id)
+    
+    // Пересохраняем DOT файл с обновлённым именем
+    const dotResult = await saveDotFile(layout.id, name)
+    if (!dotResult.success) {
+      console.warn('Failed to save DOT file:', dotResult.error)
+    }
+    
     return { success: true, layoutId: layout.id }
   } catch (error) {
     console.error('Error updating layout:', error)

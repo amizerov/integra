@@ -2,6 +2,7 @@
 
 import prisma from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { deleteDotFile } from './generateDotFile'
 
 export async function deleteNetworkLayout(layoutId: number) {
   try {
@@ -24,6 +25,13 @@ export async function deleteNetworkLayout(layoutId: number) {
     })
 
     console.log('Layout deleted:', layoutId)
+    
+    // Удаляем DOT файл
+    const dotResult = await deleteDotFile(layoutId)
+    if (!dotResult.success) {
+      console.warn('Failed to delete DOT file:', dotResult.error)
+    }
+    
     return { success: true }
   } catch (error) {
     console.error('Error deleting layout:', error)
