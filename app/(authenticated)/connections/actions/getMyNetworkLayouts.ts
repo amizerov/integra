@@ -1,16 +1,10 @@
 'use server'
 
 import prisma from '@/lib/db'
-import { auth } from '@/lib/auth'
 
 export async function getMyNetworkLayouts() {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return []
-    }
-
-    // Показываем все карты связей всех пользователей
+    // Показываем все карты связей всех пользователей (без проверки авторизации)
     const layouts = await prisma.networkLayout.findMany({
       orderBy: {
         updatedAt: 'desc',
@@ -37,3 +31,4 @@ export async function getMyNetworkLayouts() {
     return []
   }
 }
+
