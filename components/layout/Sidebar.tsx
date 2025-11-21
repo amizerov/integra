@@ -11,7 +11,8 @@ import {
   FiSettings,
   FiUsers,
   FiList,
-  FiX
+  FiX,
+  FiDatabase
 } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
 
@@ -21,6 +22,10 @@ const navigation = [
   { name: 'Связи', href: '/connections', icon: FiGitBranch },
   { name: 'Документы', href: '/documents', icon: FiFileText },
   { name: 'Классификаторы', href: '/classifiers', icon: FiList },
+]
+
+const systemNavigation = [
+  { name: 'Схемы данных', href: '/schemas', icon: FiDatabase },
   { name: 'Настройки', href: '/settings', icon: FiSettings },
 ]
 
@@ -91,6 +96,32 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
               </Link>
             )
           })}
+          
+          {/* Separator */}
+          <div className="my-4 border-t border-border" />
+          
+          {/* System settings */}
+          <div className="pt-2 space-y-1">
+            {systemNavigation.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onClose}
+                  className={cn(
+                    'flex items-center px-4 py-2.5 text-sm font-medium rounded-md transition-colors cursor-pointer',
+                    isActive
+                      ? 'bg-secondary text-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  )}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </div>
         </nav>
 
         {/* Footer */}

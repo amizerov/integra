@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-export default async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const session = await auth()
   
   // Если пользователь не авторизован и пытается попасть на защищенную страницу
@@ -22,6 +22,6 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|docs|graphviz|login|register|verify-email|forgot-password|reset-password|.*\\.png|.*\\.webp|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.dot).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|docs|graphviz|schemas|login|register|verify-email|forgot-password|reset-password|.*\\.png|.*\\.webp|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.dot|.*\\.xml).*)',
   ],
 }

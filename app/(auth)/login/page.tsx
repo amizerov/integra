@@ -51,7 +51,7 @@ export default function LoginPage() {
       {/* Theme Toggle Button */}
       <button
         onClick={toggleTheme}
-        className="absolute top-4 right-4 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+        className="absolute top-4 right-4 p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors cursor-pointer"
         aria-label="Переключить тему"
       >
         {theme === 'light' ? (
@@ -130,12 +130,6 @@ export default function LoginPage() {
                 {isLoading ? 'Вход...' : 'Войти'}
               </Button>
 
-              <div className="text-center text-sm">
-                <span className="text-muted-foreground">Нет аккаунта? </span>
-                <Link href="/register" className="text-primary hover:underline">
-                  Зарегистрироваться
-                </Link>
-              </div>
             </form>
           </CardContent>
         </Card>
