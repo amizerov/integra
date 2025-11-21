@@ -4,6 +4,8 @@ import prisma from '@/lib/db'
 
 export async function getAllNetworkLayouts() {
   try {
+    console.log('Fetching all network layouts...')
+    
     // Показываем все карты связей всех пользователей (без проверки авторизации)
     const layouts = await prisma.networkLayout.findMany({
       orderBy: {
@@ -25,6 +27,7 @@ export async function getAllNetworkLayouts() {
       },
     })
 
+    console.log('Found layouts:', layouts.length)
     return layouts
   } catch (error) {
     console.error('Error fetching layouts:', error)

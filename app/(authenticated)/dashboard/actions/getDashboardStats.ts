@@ -10,8 +10,8 @@ export async function getDashboardStats() {
     totalVersions,
     totalConnections,
     totalManagingDocuments,
-    totalFullTextDocuments,
     totalUserGuides,
+    totalSchemas,
     recentSystemsData,
     topConnectedSystems,
   ] = await Promise.all([
@@ -22,8 +22,8 @@ export async function getDashboardStats() {
     prisma.systemVersion.count(),
     prisma.dataStream.count(),
     prisma.managingDocument.count(),
-    prisma.documentFullText.count(),
     prisma.userGuide.count(),
+    prisma.schema.count(),
     // Получаем системы с их последними версиями
     prisma.informationSystem.findMany({
       include: {
@@ -60,8 +60,8 @@ export async function getDashboardStats() {
     activeVersions: totalVersions,
     totalConnections,
     totalManagingDocuments,
-    totalFullTextDocuments,
     totalUserGuides,
+    totalSchemas,
     systemsByPlatform: [],
     systemsByDatabase: [],
     topConnectedSystems,

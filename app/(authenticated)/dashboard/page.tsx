@@ -91,17 +91,17 @@ export default async function DashboardPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 bg-muted rounded-lg">
                   <p className="text-lg font-bold text-primary">{stats.totalManagingDocuments}</p>
-                  <p className="text-xs text-muted-foreground">Управленческие</p>
-                </div>
-                
-                <div className="text-center p-3 bg-muted rounded-lg">
-                  <p className="text-lg font-bold text-primary">{stats.totalFullTextDocuments}</p>
-                  <p className="text-xs text-muted-foreground">Полнотекстовые</p>
+                  <p className="text-xs text-muted-foreground">Нормативные документы</p>
                 </div>
                 
                 <div className="text-center p-3 bg-muted rounded-lg">
                   <p className="text-lg font-bold text-primary">{stats.totalUserGuides}</p>
-                  <p className="text-xs text-muted-foreground">Методички</p>
+                  <p className="text-xs text-muted-foreground">Методические пособия</p>
+                </div>
+                
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <p className="text-lg font-bold text-primary">{stats.totalSchemas}</p>
+                  <p className="text-xs text-muted-foreground">Схемы данных</p>
                 </div>
               </div>
             </div>
