@@ -101,6 +101,9 @@ export async function saveDatabaseSchema(
       throw new Error('Необходима авторизация')
     }
 
+    // Проверяем и создаём системную запись для АИС Интеграция (systemId = 0, versionId = 0)
+    await ensureSystemVersionExists(Number(session.user.id))
+
     // Генерируем ERwin XML
     const erwinXML = generateErwinXML(tables, schemaName)
     const fileBuffer = Buffer.from(erwinXML, 'utf-8')
@@ -148,6 +151,48 @@ export async function saveDatabaseSchema(
     console.error('Error saving database schema:', error)
     return { success: false, error: 'Не удалось сохранить схему' }
   }
+}
+
+// Проверяет и создаёт системную запись для АИС Интеграция
+async function ensureSystemVersionExists(userId: number): Promise<void> {
+  // Проверяем существование версии
+  const existingVersion = await prisma.systemVersion.findUnique({
+    where: { versionId: 0 },
+  })
+
+  if (existingVersion) {
+    return // Уже существует
+  }
+
+  // Проверяем существование системы
+  const existingSystem = await prisma.informationSystem.findUnique({
+    where: { systemId: 0 },
+  })
+
+  if (!existingSystem) {
+    // Создаём запись для самой АИС Интеграция
+    await prisma.informationSystem.create({
+      data: {
+        systemId: 0,
+        systemShortName: 'АИС Интеграция',
+        systemName: 'Автоматизированная информационная система "Интеграция" МГУ',
+        systemPurpose: 'Система для управления информацией о информационных системах университета',
+        hasPersonalData: 0,
+        userId: userId,
+      },
+    })
+  }
+
+  // Создаём системную версию
+  await prisma.systemVersion.create({
+    data: {
+      versionId: 0,
+      systemId: 0,
+      versionCode: '1.0',
+      versionComment: 'Системная версия для хранения схемы базы данных АИС Интеграция',
+      userId: userId,
+    },
+  })
 }
 
 // Получить следующий номер версии схемы

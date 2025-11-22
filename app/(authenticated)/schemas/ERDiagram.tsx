@@ -63,26 +63,44 @@ function TableNode({ data }: { data: Table }) {
             key={index}
             className="px-3 py-1.5 text-xs flex items-center justify-between hover:bg-accent/50 relative"
           >
-            {/* Handle для внешнего ключа (source - откуда идёт связь) */}
+            {/* Handles для внешнего ключа (source - откуда идёт связь) - с обеих сторон */}
             {column.isForeignKey && (
-              <Handle
-                type="source"
-                position={Position.Right}
-                id={`${data.name}-${column.name}-source`}
-                className="!w-2 !h-2 !bg-blue-500 !right-0"
-                style={{ top: '50%', transform: 'translateY(-50%)' }}
-              />
+              <>
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`${data.name}-${column.name}-source-right`}
+                  className="!w-2 !h-2 !bg-blue-500 !right-0"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <Handle
+                  type="source"
+                  position={Position.Left}
+                  id={`${data.name}-${column.name}-source-left`}
+                  className="!w-2 !h-2 !bg-blue-500 !left-0"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                />
+              </>
             )}
             
-            {/* Handle для первичного ключа (target - куда приходит связь) */}
+            {/* Handles для первичного ключа (target - куда приходит связь) - с обеих сторон */}
             {column.isPrimaryKey && (
-              <Handle
-                type="target"
-                position={Position.Left}
-                id={`${data.name}-${column.name}-target`}
-                className="!w-2 !h-2 !bg-yellow-500 !left-0"
-                style={{ top: '50%', transform: 'translateY(-50%)' }}
-              />
+              <>
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id={`${data.name}-${column.name}-target-left`}
+                  className="!w-2 !h-2 !bg-yellow-500 !left-0"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <Handle
+                  type="target"
+                  position={Position.Right}
+                  id={`${data.name}-${column.name}-target-right`}
+                  className="!w-2 !h-2 !bg-yellow-500 !right-0"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                />
+              </>
             )}
             
             <div className="flex items-center gap-2">
@@ -120,39 +138,73 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  useEffect(() => {
-    // Генерируем узлы и рёбра из таблиц
-    const generatedNodes: Node[] = []
-    const generatedEdges: Edge[] = []
+  // Функция для пересчёта handles связей на основе текущих позиций узлов
+  const recalculateEdges = useCallback((currentNodes: Node[]) => {
+    const nodePositions: Record<string, { x: number; y: number }> = {}
+    currentNodes.forEach(node => {
+      nodePositions[node.id] = node.position
+    })
 
-    // Размещаем таблицы по сетке для лучшей видимости связей
-    const tableCount = tables.length
-    const cols = Math.ceil(Math.sqrt(tableCount))
-    const spacing = 350 // Расстояние между таблицами
+    const updatedEdges: Edge[] = []
 
-    tables.forEach((table, index) => {
-      const row = Math.floor(index / cols)
-      const col = index % cols
-      const x = col * spacing + 100
-      const y = row * spacing + 100
-
-      generatedNodes.push({
-        id: table.name,
-        type: 'tableNode',
-        position: { x, y },
-        data: table,
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      })
-
-      // Создаём рёбра для внешних ключей
+    tables.forEach((table) => {
       table.foreignKeys.forEach((fk, fkIndex) => {
-        generatedEdges.push({
+        const sourcePos = nodePositions[table.name]
+        const targetPos = nodePositions[fk.referencedTable]
+
+        if (!sourcePos || !targetPos) return
+
+        // Вычисляем расстояния для всех 4 комбинаций подключения
+        const deltaX = targetPos.x - sourcePos.x
+        const deltaY = targetPos.y - sourcePos.y
+        
+        // Расстояние для подключения справа-слева (right to left)
+        const distRightLeft = Math.sqrt(Math.pow(Math.abs(deltaX), 2) + Math.pow(deltaY, 2))
+        
+        // Расстояние для подключения слева-справа (left to right)  
+        const distLeftRight = Math.sqrt(Math.pow(Math.abs(deltaX), 2) + Math.pow(deltaY, 2))
+        
+        // Расстояние для подключения справа-справа (right to right)
+        const distRightRight = Math.sqrt(Math.pow(Math.abs(deltaX) + 400, 2) + Math.pow(deltaY, 2))
+        
+        // Расстояние для подключения слева-слева (left to left)
+        const distLeftLeft = Math.sqrt(Math.pow(Math.abs(deltaX) + 400, 2) + Math.pow(deltaY, 2))
+        
+        // Выбираем handles в зависимости от взаимного расположения таблиц
+        let sourceHandle: string
+        let targetHandle: string
+        
+        // Если таблицы расположены почти горизонтально (deltaX значительно больше deltaY)
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (deltaX > 0) {
+            // Целевая таблица справа - используем правый source и левый target
+            sourceHandle = `${table.name}-${fk.columnName}-source-right`
+            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-left`
+          } else {
+            // Целевая таблица слева - используем левый source и правый target
+            sourceHandle = `${table.name}-${fk.columnName}-source-left`
+            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-right`
+          }
+        } else {
+          // Таблицы расположены вертикально - выбираем одну сторону для обоих
+          // Используем направление по X для выбора стороны
+          if (deltaX >= 0) {
+            // Используем правые handles для обоих
+            sourceHandle = `${table.name}-${fk.columnName}-source-right`
+            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-right`
+          } else {
+            // Используем левые handles для обоих
+            sourceHandle = `${table.name}-${fk.columnName}-source-left`
+            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-left`
+          }
+        }
+
+        updatedEdges.push({
           id: `${table.name}-${fk.referencedTable}-${fkIndex}`,
           source: table.name,
           target: fk.referencedTable,
-          sourceHandle: `${table.name}-${fk.columnName}-source`,
-          targetHandle: `${fk.referencedTable}-${fk.referencedColumn}-target`,
+          sourceHandle,
+          targetHandle,
           type: 'smoothstep',
           animated: false,
           label: fk.columnName,
@@ -172,12 +224,57 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
       })
     })
 
+    return updatedEdges
+  }, [tables])
+
+  // Обработчик изменения узлов с пересчётом связей
+  const handleNodesChange = useCallback((changes: any) => {
+    onNodesChange(changes)
+    
+    // Пересчитываем связи при перемещении узлов
+    const hasMoveChange = changes.some((change: any) => change.type === 'position' && change.dragging === false)
+    
+    if (hasMoveChange) {
+      setNodes((currentNodes) => {
+        const updatedEdges = recalculateEdges(currentNodes)
+        setEdges(updatedEdges)
+        return currentNodes
+      })
+    }
+  }, [onNodesChange, recalculateEdges, setNodes, setEdges])
+
+  useEffect(() => {
+    // Генерируем узлы и рёбра из таблиц
+    const generatedNodes: Node[] = []
+
+    // Размещаем таблицы по сетке для лучшей видимости связей
+    const tableCount = tables.length
+    const cols = Math.ceil(Math.sqrt(tableCount))
+    const spacing = 350 // Расстояние между таблицами
+
+    tables.forEach((table, index) => {
+      const row = Math.floor(index / cols)
+      const col = index % cols
+      const x = col * spacing + 100
+      const y = row * spacing + 100
+
+      generatedNodes.push({
+        id: table.name,
+        type: 'tableNode',
+        position: { x, y },
+        data: table,
+      })
+    })
+
     console.log('Generated nodes:', generatedNodes.length)
-    console.log('Generated edges:', generatedEdges.length)
     
     setNodes(generatedNodes)
-    setEdges(generatedEdges)
-  }, [tables, setNodes, setEdges])
+    
+    // Вычисляем начальные связи
+    const initialEdges = recalculateEdges(generatedNodes)
+    console.log('Generated edges:', initialEdges.length)
+    setEdges(initialEdges)
+  }, [tables, setNodes, setEdges, recalculateEdges])
 
   const handleSave = useCallback(() => {
     if (onSave) {
@@ -247,7 +344,7 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           fitView
