@@ -25,6 +25,16 @@ interface Table {
   primaryKeys: string[]
 }
 
+interface NodePosition {
+  x: number
+  y: number
+}
+
+interface SchemaLayout {
+  tables: Table[]
+  nodePositions: Record<string, NodePosition>
+}
+
 /**
  * Генерация ERwin XML формата
  * Упрощенная версия для демонстрации
@@ -93,7 +103,9 @@ function generateErwinXML(tables: Table[], schemaName: string): string {
 export async function saveDatabaseSchema(
   schemaName: string,
   description: string | null,
-  tables: Table[]
+  tables: Table[],
+  nodePositions: Record<string, NodePosition>,
+  existingSchemaVersion?: number
 ) {
   try {
     const session = await auth()
@@ -104,49 +116,114 @@ export async function saveDatabaseSchema(
     // Проверяем и создаём системную запись для АИС Интеграция (systemId = 0, versionId = 0)
     await ensureSystemVersionExists(Number(session.user.id))
 
-    // Генерируем ERwin XML
-    const erwinXML = generateErwinXML(tables, schemaName)
-    const fileBuffer = Buffer.from(erwinXML, 'utf-8')
-    const fileName = `${schemaName.replace(/[^a-z0-9]/gi, '_')}.xml`
+    console.log('Saving schema with:', {
+      tablesCount: tables.length,
+      positionsCount: Object.keys(nodePositions).length,
+      positions: nodePositions,
+      existingSchemaVersion,
+    })
+
+    // Сохраняем схему как JSON с позициями узлов
+    const schemaLayout: SchemaLayout = {
+      tables,
+      nodePositions,
+    }
+    const jsonData = JSON.stringify(schemaLayout, null, 2)
+    console.log('JSON data length:', jsonData.length)
+    console.log('JSON preview:', jsonData.substring(0, 500))
+    
+    const fileBuffer = Buffer.from(jsonData, 'utf-8')
+    const fileName = `${schemaName.replace(/[^a-z0-9]/gi, '_')}.json`
     const fileSize = fileBuffer.length
 
-    // Получаем следующий documentId
-    const lastDocument = await prisma.documentFullText.findFirst({
-      orderBy: { documentId: 'desc' },
-    })
-    const nextDocumentId = (lastDocument?.documentId || 0) + 1
+    if (existingSchemaVersion) {
+      // Режим перезаписи - обновляем существующую схему
+      const existingSchema = await prisma.schema.findFirst({
+        where: {
+          versionId: 0,
+          dataSchemaVersion: existingSchemaVersion,
+        },
+      })
 
-    // Сохраняем в intgr4_document_full_text
-    const document = await prisma.documentFullText.create({
-      data: {
-        documentId: nextDocumentId,
-        fileName,
-        fileExtension: 'xml',
-        fileBody: fileBuffer,
-        fileSize,
-        userId: Number(session.user.id),
-      },
-    })
+      if (!existingSchema) {
+        return { success: false, error: 'Схема не найдена' }
+      }
 
-    // Сохраняем метаданные в intgr_2_3_schemas
-    // Для схемы БД используем versionId = 0 (специальное значение для схемы самой АИС Интеграция)
-    const schema = await prisma.schema.create({
-      data: {
-        versionId: 0, // Специальное значение
-        dataSchemaVersion: await getNextSchemaVersion(),
-        changesInTheCurrentVersion: description || 'Схема базы данных АИС Интеграция',
-        dataSchemaDocumentId: document.documentId,
-        userId: Number(session.user.id),
-      },
-    })
+      if (!existingSchema.dataSchemaDocumentId) {
+        return { success: false, error: 'Документ схемы не найден' }
+      }
 
-    // Также сохраняем файл в public/schemas для просмотра
-    const publicDir = path.join(process.cwd(), 'public', 'schemas')
-    await fs.mkdir(publicDir, { recursive: true })
-    await fs.writeFile(path.join(publicDir, fileName), erwinXML, 'utf-8')
+      // Обновляем документ
+      await prisma.documentFullText.update({
+        where: { documentId: existingSchema.dataSchemaDocumentId },
+        data: {
+          fileName,
+          fileBody: fileBuffer,
+          fileSize,
+          userId: Number(session.user.id),
+        },
+      })
 
-    console.log('Database schema saved:', schema)
-    return { success: true, schemaId: schema.dataSchemaVersion }
+      // Обновляем метаданные схемы
+      await prisma.schema.update({
+        where: {
+          versionId_dataSchemaVersion: {
+            versionId: 0,
+            dataSchemaVersion: existingSchemaVersion,
+          },
+        },
+        data: {
+          changesInTheCurrentVersion: description || 'Схема базы данных АИС Интеграция',
+          userId: Number(session.user.id),
+        },
+      })
+
+      // Также обновляем файл в public/schemas
+      const publicDir = path.join(process.cwd(), 'public', 'schemas')
+      await fs.mkdir(publicDir, { recursive: true })
+      await fs.writeFile(path.join(publicDir, fileName), jsonData, 'utf-8')
+
+      console.log('Database schema updated:', existingSchemaVersion)
+      return { success: true, schemaId: existingSchemaVersion }
+    } else {
+      // Режим создания новой версии
+      // Получаем следующий documentId
+      const lastDocument = await prisma.documentFullText.findFirst({
+        orderBy: { documentId: 'desc' },
+      })
+      const nextDocumentId = (lastDocument?.documentId || 0) + 1
+
+      // Сохраняем в intgr4_document_full_text
+      const document = await prisma.documentFullText.create({
+        data: {
+          documentId: nextDocumentId,
+          fileName,
+          fileExtension: 'json',
+          fileBody: fileBuffer,
+          fileSize,
+          userId: Number(session.user.id),
+        },
+      })
+
+      // Сохраняем метаданные в intgr_2_3_schemas
+      const schema = await prisma.schema.create({
+        data: {
+          versionId: 0,
+          dataSchemaVersion: await getNextSchemaVersion(),
+          changesInTheCurrentVersion: description || 'Схема базы данных АИС Интеграция',
+          dataSchemaDocumentId: document.documentId,
+          userId: Number(session.user.id),
+        },
+      })
+
+      // Также сохраняем файл в public/schemas для просмотра
+      const publicDir = path.join(process.cwd(), 'public', 'schemas')
+      await fs.mkdir(publicDir, { recursive: true })
+      await fs.writeFile(path.join(publicDir, fileName), jsonData, 'utf-8')
+
+      console.log('Database schema saved:', schema)
+      return { success: true, schemaId: schema.dataSchemaVersion }
+    }
   } catch (error) {
     console.error('Error saving database schema:', error)
     return { success: false, error: 'Не удалось сохранить схему' }

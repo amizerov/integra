@@ -43,8 +43,10 @@ interface Table {
 
 interface ERDiagramProps {
   tables: Table[]
-  onSave?: () => void
-  onExport?: () => void
+  initialNodePositions?: Record<string, { x: number; y: number }>
+  onNodePositionsChange?: (positions: Record<string, { x: number; y: number }>) => void
+  isFullscreen?: boolean
+  onToggleFullscreen?: () => void
 }
 
 // Кастомный компонент для отображения таблицы
@@ -133,10 +135,9 @@ const nodeTypes = {
   tableNode: TableNode,
 }
 
-export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) {
+export default function ERDiagram({ tables, initialNodePositions, onNodePositionsChange, isFullscreen = false, onToggleFullscreen }: ERDiagramProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
-  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Функция для пересчёта handles связей на основе текущих позиций узлов
   const recalculateEdges = useCallback((currentNodes: Node[]) => {
@@ -236,12 +237,25 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
     
     if (hasMoveChange) {
       setNodes((currentNodes) => {
+        // Пересчитываем связи
         const updatedEdges = recalculateEdges(currentNodes)
         setEdges(updatedEdges)
+        
+        // Сохраняем позиции узлов асинхронно
+        setTimeout(() => {
+          if (onNodePositionsChange) {
+            const positions: Record<string, { x: number; y: number }> = {}
+            currentNodes.forEach(node => {
+              positions[node.id] = node.position
+            })
+            onNodePositionsChange(positions)
+          }
+        }, 0)
+        
         return currentNodes
       })
     }
-  }, [onNodesChange, recalculateEdges, setNodes, setEdges])
+  }, [onNodesChange, recalculateEdges, setNodes, setEdges, onNodePositionsChange])
 
   useEffect(() => {
     // Генерируем узлы и рёбра из таблиц
@@ -253,10 +267,19 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
     const spacing = 350 // Расстояние между таблицами
 
     tables.forEach((table, index) => {
-      const row = Math.floor(index / cols)
-      const col = index % cols
-      const x = col * spacing + 100
-      const y = row * spacing + 100
+      // Используем сохранённые позиции если есть, иначе сетка
+      let x, y
+      if (initialNodePositions && initialNodePositions[table.name]) {
+        x = initialNodePositions[table.name].x
+        y = initialNodePositions[table.name].y
+        console.log(`Loading saved position for ${table.name}:`, x, y)
+      } else {
+        const row = Math.floor(index / cols)
+        const col = index % cols
+        x = col * spacing + 100
+        y = row * spacing + 100
+        console.log(`Using grid position for ${table.name}:`, x, y)
+      }
 
       generatedNodes.push({
         id: table.name,
@@ -267,6 +290,7 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
     })
 
     console.log('Generated nodes:', generatedNodes.length)
+    console.log('Initial positions received:', initialNodePositions)
     
     setNodes(generatedNodes)
     
@@ -274,71 +298,25 @@ export default function ERDiagram({ tables, onSave, onExport }: ERDiagramProps) 
     const initialEdges = recalculateEdges(generatedNodes)
     console.log('Generated edges:', initialEdges.length)
     setEdges(initialEdges)
-  }, [tables, setNodes, setEdges, recalculateEdges])
-
-  const handleSave = useCallback(() => {
-    if (onSave) {
-      onSave()
-    }
-  }, [onSave])
-
-  const handleExport = useCallback(() => {
-    if (onExport) {
-      onExport()
-    }
-  }, [onExport])
+  }, [tables, initialNodePositions, setNodes, setEdges, recalculateEdges])
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative h-[calc(100vh-12rem)]'}`}>
       <Card className={`w-full h-full overflow-hidden ${isFullscreen ? 'rounded-none' : ''}`}>
-        {/* Панель инструментов */}
-        <div className="absolute top-4 right-4 z-10 flex gap-2 bg-card/95 backdrop-blur-sm p-2 rounded-lg border border-border shadow-lg">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSave}
-            title="Сохранить схему"
-          >
-            <FiSave className="h-4 w-4 mr-2" />
-            Сохранить
-          </Button>
-          
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleExport}
-            title="Экспорт в ERwin"
-          >
-            <FiDownload className="h-4 w-4 mr-2" />
-            Экспорт
-          </Button>
-          
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            title={isFullscreen ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим'}
-          >
-            {isFullscreen ? (
-              <>
-                <FiMinimize2 className="h-4 w-4 mr-2" />
-                Выйти
-              </>
-            ) : (
-              <FiMaximize2 className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-
-        {/* Информационная панель */}
-        <div className="absolute top-4 left-4 z-10 bg-card/90 backdrop-blur-sm p-3 rounded-md border border-border">
-          <div className="text-xs space-y-1">
-            <div className="text-muted-foreground">Таблиц: {tables.length}</div>
-            <div className="text-muted-foreground">
-              Связей: {tables.reduce((sum, t) => sum + t.foreignKeys.length, 0)}
-            </div>
+        {/* Кнопка выхода из полноэкранного режима */}
+        {isFullscreen && onToggleFullscreen && (
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onToggleFullscreen}
+              title="Выйти из полноэкранного режима (Esc)"
+              className="bg-card/95 backdrop-blur-sm shadow-lg"
+            >
+              <FiMinimize2 className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
+        )}
 
         {/* ReactFlow диаграмма */}
         <ReactFlow

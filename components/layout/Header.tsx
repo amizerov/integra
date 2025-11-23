@@ -25,6 +25,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     { match: (p: string) => p === '/' || p === '/dashboard', title: 'Главная', description: 'Обзор всех автоматизированных информационных систем МГУ' },
     { match: (p: string) => p.startsWith('/systems'), title: 'Системы', description: 'Управление автоматизированными информационными системами' },
     { match: (p: string) => p.startsWith('/connections'), title: 'Связи', description: 'Карта связей версий систем и потоков данных' },
+    { match: (p: string) => p.startsWith('/schemas'), title: 'Схема данных АИС Интеграция', description: 'Физическая ER-диаграмма базы данных PostgreSQL' },
     { match: (p: string) => p.startsWith('/profile'), title: 'Профиль', description: 'Информация о пользователе' },
     { match: (p: string) => p.startsWith('/settings'), title: 'Настройки', description: 'Настройки приложения' },
     { match: (p: string) => p.startsWith('/admin'), title: 'Администрирование', description: 'Инструменты администрирования' },

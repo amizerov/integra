@@ -1,3 +1,6 @@
 export { getDatabaseSchema } from './getDatabaseSchema'
 export { saveDatabaseSchema, exportDatabaseSchemaToErwin } from './saveDatabaseSchema'
-
+export { getAllSchemas } from './getAllSchemas'
+export { deleteSchema } from './deleteSchema'
+export { downloadSchema } from './downloadSchema'
+export { getDatabaseSchemaLayout } from './getDatabaseSchemaLayout'
