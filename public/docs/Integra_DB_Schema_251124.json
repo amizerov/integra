@@ -1151,32 +1151,32 @@
   ],
   "nodePositions": {
     "allowed_users": {
-      "x": 1793.1952803789861,
-      "y": 765.5024928135468
+      "x": 1867.8596682279713,
+      "y": 758.9937489838615
     },
     "c1_doc_kind": {
       "x": 404.51498527332404,
       "y": 154.34420256449332
     },
     "intgr1_information_systems": {
-      "x": 840.798737335979,
-      "y": 130.0008390600882
+      "x": 849.9204969954521,
+      "y": 64.21265607773614
     },
     "intgr2_system_versions": {
-      "x": 1553.728011003874,
-      "y": 84.24558896269133
+      "x": 1564.05617003306,
+      "y": 74.51768558519291
     },
     "intgr3_managing_documents": {
-      "x": 410.9857843586477,
-      "y": 321.73406267871883
+      "x": 426.0199804085437,
+      "y": 310.45841564129694
     },
     "intgr4_document_full_text": {
-      "x": 1220.499653611867,
-      "y": 437.3878277300729
+      "x": 1170.3594975951555,
+      "y": 413.8846295972395
     },
     "intgr_2_1_user_guides": {
-      "x": 1333.7482166224145,
-      "y": 852.3226435178859
+      "x": 1283.5504884015086,
+      "y": 836.6358534488528
     },
     "intgr_2_2_1_exchange_formats": {
       "x": 2195.3840255097593,
@@ -1187,8 +1187,8 @@
       "y": 117.19408829333095
     },
     "intgr_2_3_schemas": {
-      "x": 536.1251524459263,
-      "y": 822.7730013436698
+      "x": 467.1032761421808,
+      "y": 835.3224333988961
     },
     "network_layouts": {
       "x": 2132.962283516732,
@@ -1199,30 +1199,30 @@
     "intgr1_information_systems-allowed_users-0": 0,
     "intgr1_information_systems-allowed_users-1": 0,
     "intgr2_system_versions-intgr1_information_systems-0": 0,
-    "intgr2_system_versions-allowed_users-1": 56,
-    "intgr2_system_versions-allowed_users-2": 77,
-    "intgr3_managing_documents-intgr1_information_systems-0": 0,
+    "intgr2_system_versions-allowed_users-1": 0,
+    "intgr2_system_versions-allowed_users-2": 0,
+    "intgr3_managing_documents-intgr1_information_systems-0": 15,
     "intgr3_managing_documents-intgr4_document_full_text-1": 0,
     "intgr3_managing_documents-intgr4_document_full_text-2": 0,
     "intgr3_managing_documents-allowed_users-3": 0,
-    "intgr3_managing_documents-c1_doc_kind-4": 74,
-    "intgr4_document_full_text-allowed_users-0": 15,
-    "intgr_2_1_user_guides-intgr4_document_full_text-0": 150,
-    "intgr_2_1_user_guides-allowed_users-1": -2,
-    "intgr_2_1_user_guides-intgr2_system_versions-2": -104,
+    "intgr3_managing_documents-c1_doc_kind-4": 105,
+    "intgr4_document_full_text-allowed_users-0": 0,
+    "intgr_2_1_user_guides-intgr4_document_full_text-0": 0,
+    "intgr_2_1_user_guides-allowed_users-1": 0,
+    "intgr_2_1_user_guides-intgr2_system_versions-2": 0,
     "intgr_2_2_1_exchange_formats-intgr4_document_full_text-0": 0,
     "intgr_2_2_1_exchange_formats-intgr4_document_full_text-1": 0,
     "intgr_2_2_1_exchange_formats-allowed_users-2": 0,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-3": 200,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-4": 141,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-5": 59,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-6": 104,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-3": 0,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-4": 0,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-5": 0,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-6": 0,
     "intgr_2_2_data_streams-allowed_users-0": 0,
     "intgr_2_2_data_streams-intgr2_system_versions-1": 0,
-    "intgr_2_2_data_streams-intgr2_system_versions-2": 13,
-    "intgr_2_3_schemas-intgr4_document_full_text-0": 0,
+    "intgr_2_2_data_streams-intgr2_system_versions-2": 0,
+    "intgr_2_3_schemas-intgr4_document_full_text-0": -48,
     "intgr_2_3_schemas-allowed_users-1": 0,
     "intgr_2_3_schemas-intgr2_system_versions-2": 0,
-    "network_layouts-allowed_users-0": 35
+    "network_layouts-allowed_users-0": 0
   }
 }
