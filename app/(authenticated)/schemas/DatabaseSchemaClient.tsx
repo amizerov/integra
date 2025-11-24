@@ -35,6 +35,8 @@ interface Table {
 export default function DatabaseSchemaClient() {
   const [tables, setTables] = useState<Table[]>([])
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({})
+  const [edgeOffsets, setEdgeOffsets] = useState<Record<string, number>>({})
+  const [edgeOffsetsSeed, setEdgeOffsetsSeed] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showSchemaListDialog, setShowSchemaListDialog] = useState(false)
@@ -75,6 +77,9 @@ export default function DatabaseSchemaClient() {
         if (result.success && result.tables) {
           setTables(result.tables)
           setNodePositions(result.nodePositions || {})
+          const offsets = result.edgeOffsets || {}
+          setEdgeOffsets(offsets)
+          setEdgeOffsetsSeed(offsets)
           toast.success('Загружена последняя сохраненная схема')
           return
         }
@@ -97,6 +102,8 @@ export default function DatabaseSchemaClient() {
       if (result.success && result.tables) {
         setTables(result.tables)
         setNodePositions({}) // Сбрасываем позиции - будет сетка по умолчанию
+        setEdgeOffsets({})
+        setEdgeOffsetsSeed({})
         toast.success('Схема базы данных загружена')
       } else {
         toast.error(result.error || 'Не удалось загрузить схему')
@@ -124,6 +131,9 @@ export default function DatabaseSchemaClient() {
         console.log('Setting positions:', result.nodePositions)
         setTables(result.tables)
         setNodePositions(result.nodePositions || {})
+        const offsets = result.edgeOffsets || {}
+        setEdgeOffsets(offsets)
+        setEdgeOffsetsSeed(offsets)
         toast.success(`Схема версии ${dataSchemaVersion} загружена`)
       } else {
         toast.error(result.error || 'Не удалось загрузить схему')
@@ -171,6 +181,7 @@ export default function DatabaseSchemaClient() {
         schemaDescription || null, 
         tables, 
         nodePositions,
+        edgeOffsets,
         isNewVersion ? undefined : selectedSchemaVersion
       )
       if (result.success) {
@@ -294,7 +305,9 @@ export default function DatabaseSchemaClient() {
       <ERDiagram 
         tables={tables}
         initialNodePositions={nodePositions}
+        initialEdgeOffsets={edgeOffsetsSeed}
         onNodePositionsChange={setNodePositions}
+        onEdgeOffsetsChange={setEdgeOffsets}
         isFullscreen={isFullscreen}
         onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
       />

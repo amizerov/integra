@@ -33,6 +33,7 @@ interface NodePosition {
 interface SchemaLayout {
   tables: Table[]
   nodePositions: Record<string, NodePosition>
+  edgeOffsets?: Record<string, number>
 }
 
 /**
@@ -105,6 +106,7 @@ export async function saveDatabaseSchema(
   description: string | null,
   tables: Table[],
   nodePositions: Record<string, NodePosition>,
+  edgeOffsets: Record<string, number>,
   existingSchemaVersion?: number
 ) {
   try {
@@ -121,12 +123,14 @@ export async function saveDatabaseSchema(
       positionsCount: Object.keys(nodePositions).length,
       positions: nodePositions,
       existingSchemaVersion,
+      edgeOffsetsCount: Object.keys(edgeOffsets || {}).length,
     })
 
     // Сохраняем схему как JSON с позициями узлов
     const schemaLayout: SchemaLayout = {
       tables,
       nodePositions,
+      edgeOffsets,
     }
     const jsonData = JSON.stringify(schemaLayout, null, 2)
     console.log('JSON data length:', jsonData.length)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -11,11 +11,15 @@ import ReactFlow, {
   MarkerType,
   Position,
   Handle,
+  BaseEdge,
+  EdgeProps,
+  getSmoothStepPath,
+  useReactFlow,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FiDownload, FiSave, FiMaximize2, FiMinimize2 } from 'react-icons/fi'
+import { FiMinimize2 } from 'react-icons/fi'
 
 interface Column {
   name: string
@@ -45,6 +49,8 @@ interface ERDiagramProps {
   tables: Table[]
   initialNodePositions?: Record<string, { x: number; y: number }>
   onNodePositionsChange?: (positions: Record<string, { x: number; y: number }>) => void
+  initialEdgeOffsets?: Record<string, number>
+  onEdgeOffsetsChange?: (offsets: Record<string, number>) => void
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
 }
@@ -135,9 +141,164 @@ const nodeTypes = {
   tableNode: TableNode,
 }
 
-export default function ERDiagram({ tables, initialNodePositions, onNodePositionsChange, isFullscreen = false, onToggleFullscreen }: ERDiagramProps) {
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+function AdjustableEdge(props: EdgeProps) {
+  const {
+    id,
+    markerEnd,
+    style,
+    data,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  } = props
+
+  const offset = data?.offset ?? 0
+  const { setEdges } = useReactFlow()
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOrientation, setDragOrientation] = useState<'horizontal' | 'vertical'>('horizontal')
+  const pathRef = useRef<SVGPathElement | null>(null)
+
+  const [edgePath] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+    offset,
+  })
+
+  const getOrientationAtPointer = useCallback((event: React.MouseEvent<SVGPathElement>) => {
+    const path = pathRef.current
+    if (!path) return 'horizontal'
+
+    const svg = path.ownerSVGElement
+    if (!svg) return 'horizontal'
+
+    const point = svg.createSVGPoint()
+    point.x = event.clientX
+    point.y = event.clientY
+
+    const ctm = path.getScreenCTM()
+    if (!ctm) return 'horizontal'
+    const localPoint = point.matrixTransform(ctm.inverse())
+
+    const totalLength = path.getTotalLength()
+    let closestLength = 0
+    let minDist = Infinity
+    const step = Math.max(1, totalLength / 200)
+
+    for (let l = 0; l <= totalLength; l += step) {
+      const pt = path.getPointAtLength(l)
+      const dist = (pt.x - localPoint.x) ** 2 + (pt.y - localPoint.y) ** 2
+      if (dist < minDist) {
+        minDist = dist
+        closestLength = l
+      }
+    }
+
+    const delta = Math.min(5, totalLength / 10)
+    const before = path.getPointAtLength(Math.max(0, closestLength - delta))
+    const after = path.getPointAtLength(Math.min(totalLength, closestLength + delta))
+    const dx = after.x - before.x
+    const dy = after.y - before.y
+
+    return Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical'
+  }, [])
+
+  const handleMouseDown = useCallback(
+    (event: React.MouseEvent<SVGPathElement>) => {
+      event.stopPropagation()
+      const orientation = getOrientationAtPointer(event)
+      setDragOrientation(orientation)
+      setIsDragging(true)
+      const startCoord = orientation === 'horizontal' ? event.clientY : event.clientX
+      const initialOffset = offset
+      const direction = orientation === 'horizontal' ? 1 : -1
+
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const delta = (orientation === 'horizontal' ? moveEvent.clientY : moveEvent.clientX) - startCoord
+        setEdges((currentEdges) =>
+          currentEdges.map((edge) =>
+            edge.id === id
+              ? {
+                  ...edge,
+                  data: {
+                    ...edge.data,
+                    offset: clamp(initialOffset + delta * direction, -200, 200),
+                  },
+                }
+              : edge
+          )
+        )
+      }
+
+      const handleMouseUp = () => {
+        setIsDragging(false)
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    },
+    [getOrientationAtPointer, id, offset, setEdges]
+  )
+
+  const highlightStyle = isDragging
+    ? {
+        ...(style || {}),
+        strokeWidth: Number(style?.strokeWidth ?? 2) + 2,
+        stroke: style?.stroke || '#1d4ed8',
+      }
+    : style
+
+  return (
+    <>
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={highlightStyle} />
+      <path
+        ref={pathRef}
+        d={edgePath}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={20}
+        onMouseDown={handleMouseDown}
+        className={isDragging ? 'cursor-grabbing' : 'cursor-grab'}
+      />
+    </>
+  )
+}
+
+const edgeTypes = {
+  adjustable: AdjustableEdge,
+}
+
+export default function ERDiagram({ tables, initialNodePositions, onNodePositionsChange, initialEdgeOffsets, onEdgeOffsetsChange, isFullscreen = false, onToggleFullscreen }: ERDiagramProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const edgeOffsetsRef = useRef<Map<string, number>>(new Map())
+  const lastSentOffsetsRef = useRef<string>('')
+
+  useEffect(() => {
+    edgeOffsetsRef.current = new Map(Object.entries(initialEdgeOffsets || {}))
+    lastSentOffsetsRef.current = JSON.stringify(initialEdgeOffsets || {})
+  }, [initialEdgeOffsets])
+
+  useEffect(() => {
+    const map = new Map(edges.map((edge) => [edge.id, edge.data?.offset ?? 0]))
+    edgeOffsetsRef.current = map
+    const obj = Object.fromEntries(map)
+    const serialized = JSON.stringify(obj)
+    if (serialized !== lastSentOffsetsRef.current) {
+      lastSentOffsetsRef.current = serialized
+      onEdgeOffsetsChange?.(obj)
+    }
+  }, [edges, onEdgeOffsetsChange])
 
   // Функция для пересчёта handles связей на основе текущих позиций узлов
   const recalculateEdges = useCallback((currentNodes: Node[]) => {
@@ -200,17 +361,22 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
           }
         }
 
+        const edgeId = `${table.name}-${fk.referencedTable}-${fkIndex}`
+
         updatedEdges.push({
-          id: `${table.name}-${fk.referencedTable}-${fkIndex}`,
+          id: edgeId,
           source: table.name,
           target: fk.referencedTable,
           sourceHandle,
           targetHandle,
-          type: 'smoothstep',
+          type: 'adjustable',
           animated: false,
           label: fk.columnName,
           labelStyle: { fontSize: 10, fill: '#666', fontWeight: 500 },
           labelBgStyle: { fill: '#fff', fillOpacity: 0.9 },
+          data: {
+            offset: edgeOffsetsRef.current.get(edgeId) ?? 0,
+          },
           markerEnd: {
             type: MarkerType.ArrowClosed,
             width: 20,
@@ -258,6 +424,9 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
   }, [onNodesChange, recalculateEdges, setNodes, setEdges, onNodePositionsChange])
 
   useEffect(() => {
+    edgeOffsetsRef.current = new Map(Object.entries(initialEdgeOffsets || {}))
+    lastSentOffsetsRef.current = JSON.stringify(initialEdgeOffsets || {})
+
     // Генерируем узлы и рёбра из таблиц
     const generatedNodes: Node[] = []
 
@@ -298,7 +467,7 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
     const initialEdges = recalculateEdges(generatedNodes)
     console.log('Generated edges:', initialEdges.length)
     setEdges(initialEdges)
-  }, [tables, initialNodePositions, setNodes, setEdges, recalculateEdges])
+  }, [tables, initialNodePositions, initialEdgeOffsets, setNodes, setEdges, recalculateEdges])
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative h-[calc(100vh-12rem)]'}`}>
@@ -325,6 +494,7 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
           onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
           minZoom={0.1}
           maxZoom={2}

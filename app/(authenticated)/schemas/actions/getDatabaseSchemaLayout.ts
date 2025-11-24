@@ -30,6 +30,7 @@ interface Table {
 interface SchemaLayout {
   tables: Table[]
   nodePositions: Record<string, NodePosition>
+  edgeOffsets?: Record<string, number>
 }
 
 export async function getDatabaseSchemaLayout(versionId: number, dataSchemaVersion: number) {
@@ -84,12 +85,14 @@ export async function getDatabaseSchemaLayout(versionId: number, dataSchemaVersi
     console.log('Parsed schema layout:', {
       tablesCount: schemaLayout.tables?.length,
       positionsCount: Object.keys(schemaLayout.nodePositions || {}).length,
+      edgeOffsetsCount: Object.keys(schemaLayout.edgeOffsets || {}).length,
     })
 
     return {
       success: true,
       tables: schemaLayout.tables,
       nodePositions: schemaLayout.nodePositions,
+      edgeOffsets: schemaLayout.edgeOffsets || {},
     }
   } catch (error) {
     console.error('Error loading schema layout:', error)
