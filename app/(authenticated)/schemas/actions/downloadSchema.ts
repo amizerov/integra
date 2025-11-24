@@ -28,7 +28,7 @@ export async function downloadSchema(versionId: number, dataSchemaVersion: numbe
     }
 
     // Конвертируем Buffer в строку
-    const xmlContent = fileBody.toString('utf-8')
+    const xmlContent = fileBody.toString()
 
     return {
       success: true,
