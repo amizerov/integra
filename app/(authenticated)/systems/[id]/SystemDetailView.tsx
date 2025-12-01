@@ -39,7 +39,7 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
   const tabs = [
     { id: 'info' as const, label: 'Общая информация' },
     { id: 'versions' as const, label: 'Версии' },
-    { id: 'documents' as const, label: 'Документы' },
+    { id: 'documents' as const, label: 'Нормативные документы' },
   ]
 
   const formatDate = (date: Date | null | undefined) => {
