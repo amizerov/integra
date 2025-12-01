@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
 import { deleteSystem } from '@/app/(authenticated)/systems/actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface EditSystemFormProps {
   system: any
@@ -15,6 +16,7 @@ interface EditSystemFormProps {
 
 export default function EditSystemForm({ system }: EditSystemFormProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -23,7 +25,13 @@ export default function EditSystemForm({ system }: EditSystemFormProps) {
       return
     }
 
-    const confirmed = window.confirm('Удалить систему? Это действие нельзя отменить.')
+    const confirmed = await confirm({
+      title: 'Удаление системы',
+      message: 'Вы действительно хотите удалить эту систему? Все версии, документы и связанные данные будут безвозвратно удалены.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
     if (!confirmed) {
       return
     }

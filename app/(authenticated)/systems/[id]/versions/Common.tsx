@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { FiEdit2, FiSave, FiX, FiTrash2 } from 'react-icons/fi'
 import { updateCommon, deleteVersion } from './actions'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface CommonProps {
   version: any
@@ -17,6 +18,7 @@ interface CommonProps {
 
 export default function Common({ version, systemId }: CommonProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -79,7 +81,13 @@ export default function Common({ version, systemId }: CommonProps) {
   const handleDelete = async () => {
     if (isDeleting) return
 
-    const confirmed = window.confirm('Удалить версию? Это действие нельзя отменить.')
+    const confirmed = await confirm({
+      title: 'Удаление версии',
+      message: 'Вы действительно хотите удалить эту версию? Все потоки данных, схемы и связанные документы будут безвозвратно удалены.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
     if (!confirmed) return
 
     setIsDeleting(true)
@@ -101,39 +109,31 @@ export default function Common({ version, systemId }: CommonProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Основная информация</CardTitle>
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={handleDelete} 
-                disabled={isSaving || isDeleting}
-              >
-                <FiTrash2 className="h-4 w-4 mr-2" />
-                {isDeleting ? 'Удаление...' : 'Удалить версию'}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Основная информация</CardTitle>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving || isDeleting}>
+                  <FiX className="h-4 w-4 mr-2" />
+                  Отмена
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={isSaving || isDeleting}>
+                  <FiSave className="h-4 w-4 mr-2" />
+                  {isSaving ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <FiEdit2 className="h-4 w-4 mr-2" />
+                Редактировать
               </Button>
-              <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving || isDeleting}>
-                <FiX className="h-4 w-4 mr-2" />
-                Отмена
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving || isDeleting}>
-                <FiSave className="h-4 w-4 mr-2" />
-                {isSaving ? 'Сохранение...' : 'Сохранить'}
-              </Button>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <FiEdit2 className="h-4 w-4 mr-2" />
-              Редактировать
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label className="text-sm font-medium text-muted-foreground">Код версии</Label>
@@ -283,5 +283,21 @@ export default function Common({ version, systemId }: CommonProps) {
         </div>
       </CardContent>
     </Card>
+
+    {/* Кнопка удаления внизу справа, только в режиме редактирования */}
+    {isEditing && (
+      <div className="flex justify-end mt-4">
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={handleDelete} 
+          disabled={isSaving || isDeleting}
+        >
+          <FiTrash2 className="h-4 w-4 mr-2" />
+          {isDeleting ? 'Удаление...' : 'Удалить версию'}
+        </Button>
+      </div>
+    )}
+    </>
   )
 }

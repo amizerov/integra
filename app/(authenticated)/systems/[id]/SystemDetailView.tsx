@@ -14,6 +14,7 @@ import { deleteSystem } from '../actions/createSystem'
 import { createVersion } from './versions/actions'
 import Version from './Version'
 import SystemDocuments from './documents/SystemDocuments'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface SystemDetailViewProps {
   system: any
@@ -21,6 +22,7 @@ interface SystemDetailViewProps {
 
 export default function SystemDetailView({ system }: SystemDetailViewProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [activeTab, setActiveTab] = useState<'info' | 'versions' | 'documents'>('info')
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0)
   const [isEditingSystem, setIsEditingSystem] = useState(false)
@@ -75,7 +77,13 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
       return
     }
 
-    const confirmed = window.confirm('Удалить систему? Это действие нельзя отменить.')
+    const confirmed = await confirm({
+      title: 'Удаление системы',
+      message: 'Вы действительно хотите удалить эту систему? Все версии, документы и связанные данные будут безвозвратно удалены.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
     if (!confirmed) {
       return
     }
@@ -161,20 +169,13 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
 
       {/* Tab Content */}
       {activeTab === 'info' && (
+        <>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Основная информация</CardTitle>
               {isEditingSystem ? (
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteSystem}
-                    disabled={isSaving || isDeleting}
-                  >
-                    {isDeleting ? 'Удаление...' : 'Удалить систему'}
-                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -307,6 +308,21 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Кнопка удаления внизу справа, только в режиме редактирования */}
+        {isEditingSystem && (
+          <div className="flex justify-end mt-4">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteSystem}
+              disabled={isSaving || isDeleting}
+            >
+              {isDeleting ? 'Удаление...' : 'Удалить систему'}
+            </Button>
+          </div>
+        )}
+      </>
       )}
 
       {activeTab === 'versions' && (

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { FiPlus, FiDownload, FiTrash2, FiFile, FiFileText, FiImage, FiCalendar, FiUser } from 'react-icons/fi'
 import { getDocuments, uploadDocument, deleteDocument, downloadDocument, getDocumentKinds } from './actions'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface Document {
   systemId: number
@@ -39,6 +40,7 @@ interface SystemDocumentsProps {
 
 export default function SystemDocuments({ systemId }: SystemDocumentsProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [documents, setDocuments] = useState<Document[]>([])
   const [documentKinds, setDocumentKinds] = useState<DocumentKind[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,7 +123,13 @@ export default function SystemDocuments({ systemId }: SystemDocumentsProps) {
   }
 
   const handleDelete = async (doc: Document) => {
-    const confirmed = window.confirm('Удалить документ? Это действие нельзя отменить.')
+    const confirmed = await confirm({
+      title: 'Удаление документа',
+      message: 'Вы действительно хотите удалить этот документ? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
     if (!confirmed) return
 
     try {

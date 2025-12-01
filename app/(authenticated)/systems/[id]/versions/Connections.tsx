@@ -16,6 +16,7 @@ import {
   deleteDataStream 
 } from './actions'
 import toast from 'react-hot-toast'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface DataStream {
   streamId: number
@@ -60,6 +61,7 @@ interface ConnectionsProps {
 
 export default function Connections({ version, systemId }: ConnectionsProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [outgoingStreams, setOutgoingStreams] = useState<DataStream[]>([])
   const [incomingStreams, setIncomingStreams] = useState<IncomingStream[]>([])
   const [versionOptions, setVersionOptions] = useState<VersionOption[]>([])
@@ -174,7 +176,13 @@ export default function Connections({ version, systemId }: ConnectionsProps) {
   }
 
   const handleDelete = async (stream: DataStream) => {
-    const confirmed = window.confirm('Удалить поток данных? Это действие нельзя отменить.')
+    const confirmed = await confirm({
+      title: 'Удаление потока данных',
+      message: 'Вы действительно хотите удалить этот поток данных? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
     if (!confirmed) return
 
     try {

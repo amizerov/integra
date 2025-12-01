@@ -5,6 +5,7 @@ import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from './ThemeContext'
 import { Toaster } from 'react-hot-toast'
 import { useState } from 'react'
+import { ConfirmProvider } from '@/components/ui/confirm-dialog'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -20,7 +21,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          {children}
+          <ConfirmProvider>
+            {children}
+          </ConfirmProvider>
           <Toaster
             position="bottom-right"
             toastOptions={{

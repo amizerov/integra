@@ -20,7 +20,7 @@ export default function Version({ version, systemId }: VersionProps) {
     { id: 'organizational' as const, label: 'Организационная информация' },
     { id: 'technical' as const, label: 'Техническая информация' },
     { id: 'documents' as const, label: 'Документы' },
-    { id: 'connections' as const, label: 'Связи' },
+    { id: 'connections' as const, label: 'Потоки данных' },
   ]
 
   return (
