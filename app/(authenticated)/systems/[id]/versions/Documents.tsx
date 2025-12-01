@@ -19,6 +19,7 @@ import {
 } from './actions'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 
 interface DocumentsProps {
   version: any
@@ -27,6 +28,7 @@ interface DocumentsProps {
 
 export default function Documents({ version, systemId }: DocumentsProps) {
   const router = useRouter()
+  const confirm = useConfirm()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSchemaDialogOpen, setIsSchemaDialogOpen] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -74,6 +76,7 @@ export default function Documents({ version, systemId }: DocumentsProps) {
       data.append('yearPublished', formData.yearPublished)
       data.append('authorsList', formData.authorsList)
       data.append('publisher', formData.publisher)
+      data.append('systemId', systemId.toString())
 
       const result = await uploadUserGuide(version.versionId, data)
 
@@ -95,12 +98,20 @@ export default function Documents({ version, systemId }: DocumentsProps) {
   }
 
   const handleDelete = async () => {
-    if (!confirm('Удалить документ? Это действие нельзя отменить.')) {
+    const confirmed = await confirm({
+      title: 'Удаление руководства',
+      message: 'Вы действительно хотите удалить руководство пользователя? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
+    
+    if (!confirmed) {
       return
     }
 
     try {
-      const result = await deleteUserGuide(version.versionId)
+      const result = await deleteUserGuide(version.versionId, systemId)
       
       if (result.success) {
         toast.success('Документ успешно удален')
@@ -151,7 +162,7 @@ export default function Documents({ version, systemId }: DocumentsProps) {
 
   const handleView = async () => {
     try {
-      const result = await saveUserGuideToPublic(version.versionId)
+      const result = await saveUserGuideToPublic(version.versionId, systemId)
       
       if (result.success && result.url) {
         // Открываем файл из public/docs в новом окне
@@ -189,6 +200,7 @@ export default function Documents({ version, systemId }: DocumentsProps) {
       data.append('file', selectedSchemaFile)
       data.append('dataSchemaVersion', schemaFormData.dataSchemaVersion)
       data.append('changesInTheCurrentVersion', schemaFormData.changesInTheCurrentVersion)
+      data.append('systemId', systemId.toString())
 
       const result = await uploadSchema(version.versionId, data)
 
@@ -210,12 +222,20 @@ export default function Documents({ version, systemId }: DocumentsProps) {
   }
 
   const handleSchemaDelete = async (dataSchemaVersion: number) => {
-    if (!confirm('Удалить схему? Это действие нельзя отменить.')) {
+    const confirmed = await confirm({
+      title: 'Удаление схемы данных',
+      message: 'Вы действительно хотите удалить эту схему данных? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
+    
+    if (!confirmed) {
       return
     }
 
     try {
-      const result = await deleteSchema(version.versionId, dataSchemaVersion)
+      const result = await deleteSchema(version.versionId, dataSchemaVersion, systemId)
       
       if (result.success) {
         toast.success('Схема успешно удалена')
@@ -266,7 +286,7 @@ export default function Documents({ version, systemId }: DocumentsProps) {
 
   const handleSchemaView = async (dataSchemaVersion: number) => {
     try {
-      const result = await saveSchemaToPublic(version.versionId, dataSchemaVersion)
+      const result = await saveSchemaToPublic(version.versionId, dataSchemaVersion, systemId)
       
       if (result.success && result.url) {
         // Открываем файл из public/docs в новом окне
@@ -574,15 +594,21 @@ export default function Documents({ version, systemId }: DocumentsProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dataSchemaVersion">Версия схемы *</Label>
+              <Label htmlFor="dataSchemaVersion" className="text-sm font-medium">
+                Версия схемы <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="dataSchemaVersion"
                 type="number"
                 value={schemaFormData.dataSchemaVersion}
                 onChange={(e) => setSchemaFormData(prev => ({ ...prev, dataSchemaVersion: e.target.value }))}
-                placeholder="1"
+                placeholder="Введите номер версии"
                 min="1"
+                className={!schemaFormData.dataSchemaVersion && selectedSchemaFile ? 'border-destructive' : ''}
               />
+              {!schemaFormData.dataSchemaVersion && selectedSchemaFile && (
+                <p className="text-xs text-destructive">Обязательное поле</p>
+              )}
             </div>
 
             <div className="space-y-2">

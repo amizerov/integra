@@ -2,10 +2,11 @@
 
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
-import { writeFile } from 'fs/promises'
+import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
+import { existsSync } from 'fs'
 
-export async function saveUserGuideToPublic(versionId: number) {
+export async function saveUserGuideToPublic(versionId: number, systemId: number) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -30,15 +31,21 @@ export async function saveUserGuideToPublic(versionId: number) {
       return { success: false, error: 'Файл не найден' }
     }
 
-    // Путь к папке public/docs
-    const docsDir = join(process.cwd(), 'public', 'docs')
+    // Путь к папке public/docs/system{systemId}/version{versionId}/manual/
+    const docsDir = join(process.cwd(), 'public', 'docs', `system${systemId}`, `version${versionId}`, 'manual')
+    
+    // Создаем папки если не существуют
+    if (!existsSync(docsDir)) {
+      await mkdir(docsDir, { recursive: true })
+    }
+    
     const filePath = join(docsDir, document.fileName)
 
     // Сохраняем файл (перезаписываем если существует)
     await writeFile(filePath, document.fileBody)
 
     // Возвращаем URL для просмотра
-    const fileUrl = `/docs/${document.fileName}`
+    const fileUrl = `/docs/system${systemId}/version${versionId}/manual/${encodeURIComponent(document.fileName)}`
 
     return { 
       success: true, 

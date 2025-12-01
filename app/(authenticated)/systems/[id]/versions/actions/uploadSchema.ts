@@ -2,6 +2,9 @@
 
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
 
 export async function uploadSchema(
   versionId: number,
@@ -29,6 +32,7 @@ export async function uploadSchema(
     }
 
     const changesInTheCurrentVersion = formData.get('changesInTheCurrentVersion') as string
+    const systemId = formData.get('systemId') as string
 
     // Проверяем, не существует ли уже такая версия схемы
     const existingSchema = await prisma.schema.findUnique({
@@ -72,6 +76,20 @@ export async function uploadSchema(
         lastChangeDate: new Date(),
       },
     })
+
+    // Сохраняем файл в папку public/docs/system{systemId}/version{versionId}/schema/
+    if (systemId) {
+      const docsDir = join(process.cwd(), 'public', 'docs', `system${systemId}`, `version${versionId}`, 'schema')
+      
+      // Создаем папки если не существуют
+      if (!existsSync(docsDir)) {
+        await mkdir(docsDir, { recursive: true })
+      }
+      
+      // Сохраняем файл с оригинальным именем (перезаписываем если существует)
+      const filePath = join(docsDir, file.name)
+      await writeFile(filePath, buffer)
+    }
 
     // Создаем запись в intgr_2_3_schemas с указанной версией
     const schema = await prisma.schema.create({
