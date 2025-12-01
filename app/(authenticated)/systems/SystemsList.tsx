@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -174,9 +175,11 @@ export default function SystemsList({ systems, showAddButton = true }: SystemsLi
         </div>
 
         {showAddButton && (
-          <Button>
-            Добавить систему
-          </Button>
+          <Link href="/systems/new" className="inline-flex">
+            <Button>
+              Добавить систему
+            </Button>
+          </Link>
         )}
       </div>
 

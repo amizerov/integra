@@ -1,6 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
 
 /**
  * Получить топ систем по количеству связей (входящих + исходящих)
@@ -117,29 +119,81 @@ export async function createSystem(data: {
   systemShortName?: string
   systemPurpose?: string
   hasPersonalData?: boolean
-  userId: number
 }) {
-  // Get the max systemId to generate the next one
-  const maxSystem = await prisma.informationSystem.findFirst({
-    orderBy: { systemId: 'desc' }
-  })
-  const nextId = (maxSystem?.systemId || 0) + 1
-  
-  const system = await prisma.informationSystem.create({
-    data: {
-      systemId: nextId,
-      systemName: data.systemName,
-      systemShortName: data.systemShortName,
-      systemPurpose: data.systemPurpose,
-      hasPersonalData: data.hasPersonalData ? 1 : 0,
-      userId: data.userId,
-      creationDate: new Date(),
-      lastChangeUser: data.userId,
-      lastChangeDate: new Date()
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Необходима авторизация' }
+  }
+
+  const userId = Number(session.user.id)
+
+  if (Number.isNaN(userId)) {
+    return { success: false, error: 'Некорректный идентификатор пользователя' }
+  }
+
+  try {
+    // Use findFirst instead of aggregate to reduce connection pressure
+    const maxSystem = await prisma.informationSystem.findFirst({
+      orderBy: { systemId: 'desc' },
+      select: { systemId: true }
+    })
+    const nextId = (maxSystem?.systemId || 0) + 1
+
+    const system = await prisma.informationSystem.create({
+      data: {
+        systemId: nextId,
+        systemName: data.systemName,
+        systemShortName: data.systemShortName?.trim() || null,
+        systemPurpose: data.systemPurpose?.trim() || null,
+        hasPersonalData: data.hasPersonalData ? 1 : 0,
+        userId,
+        creationDate: new Date(),
+        lastChangeUser: userId,
+        lastChangeDate: new Date()
+      }
+    })
+
+    revalidatePath('/systems')
+
+    return { success: true, systemId: system.systemId }
+  } catch (error) {
+    console.error('Error creating system:', error)
+    return { success: false, error: 'Не удалось создать систему' }
+  }
+}
+
+export async function deleteSystem(systemId: number) {
+  const session = await auth()
+
+  if (!session?.user?.id) {
+    return { success: false, error: 'Необходима авторизация' }
+  }
+
+  try {
+    const [versionsCount, documentsCount] = await Promise.all([
+      prisma.systemVersion.count({ where: { systemId } }),
+      prisma.managingDocument.count({ where: { systemId } })
+    ])
+
+    if (versionsCount > 0) {
+      return { success: false, error: 'Сначала удалите все версии системы' }
     }
-  })
-  
-  return system
+
+    if (documentsCount > 0) {
+      return { success: false, error: 'Сначала удалите все документы системы' }
+    }
+
+    await prisma.informationSystem.delete({ where: { systemId } })
+
+    revalidatePath('/systems')
+    revalidatePath(`/systems/${systemId}`)
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting system:', error)
+    return { success: false, error: 'Не удалось удалить систему' }
+  }
 }
 
 export async function getDashboardStats() {

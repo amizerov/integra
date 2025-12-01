@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 const navigation = [
   { name: 'Главная', href: '/dashboard', icon: FiHome },
   { name: 'Системы', href: '/systems', icon: FiServer },
-  { name: 'Связи', href: '/connections', icon: FiGitBranch },
+  { name: 'Потоки данных', href: '/connections', icon: FiGitBranch },
   { name: 'Документы', href: '/documents', icon: FiFileText },
   { name: 'Классификаторы', href: '/classifiers', icon: FiList },
 ]

@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { FiEdit2, FiSave, FiX } from 'react-icons/fi'
-import { updateCommon } from './actions'
+import { FiEdit2, FiSave, FiX, FiTrash2 } from 'react-icons/fi'
+import { updateCommon, deleteVersion } from './actions'
 import toast from 'react-hot-toast'
 
 interface CommonProps {
@@ -19,6 +19,7 @@ export default function Common({ version, systemId }: CommonProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState({
     versionCode: version.versionCode || '',
     operatingUnit: version.operatingUnit || '',
@@ -75,6 +76,30 @@ export default function Common({ version, systemId }: CommonProps) {
     setIsEditing(false)
   }
 
+  const handleDelete = async () => {
+    if (isDeleting) return
+
+    const confirmed = window.confirm('Удалить версию? Это действие нельзя отменить.')
+    if (!confirmed) return
+
+    setIsDeleting(true)
+    try {
+      const result = await deleteVersion(version.versionId)
+      if (!result?.success) {
+        toast.error(result?.error || 'Не удалось удалить версию')
+        return
+      }
+
+      toast.success('Версия удалена')
+      router.refresh()
+    } catch (error) {
+      console.error('Ошибка удаления версии:', error)
+      toast.error('Ошибка при удалении версии')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -82,11 +107,20 @@ export default function Common({ version, systemId }: CommonProps) {
           <CardTitle>Основная информация</CardTitle>
           {isEditing ? (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={handleDelete} 
+                disabled={isSaving || isDeleting}
+              >
+                <FiTrash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? 'Удаление...' : 'Удалить версию'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving || isDeleting}>
                 <FiX className="h-4 w-4 mr-2" />
                 Отмена
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving}>
+              <Button size="sm" onClick={handleSave} disabled={isSaving || isDeleting}>
                 <FiSave className="h-4 w-4 mr-2" />
                 {isSaving ? 'Сохранение...' : 'Сохранить'}
               </Button>

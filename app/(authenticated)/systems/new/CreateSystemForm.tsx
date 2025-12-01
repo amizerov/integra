@@ -9,36 +9,40 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import { createSystem } from '../actions/createSystem'
 
-interface CreateSystemFormProps {
-  userId: number
-}
-
-export default function CreateSystemForm({ userId }: CreateSystemFormProps) {
+export default function CreateSystemForm() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     systemName: '',
     systemShortName: '',
+    systemPurpose: '',
     hasPersonalData: false,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setErrorMessage(null)
 
     try {
-      const system = await createSystem({
+      const result = await createSystem({
         systemName: formData.systemName,
         systemShortName: formData.systemShortName || undefined,
+        systemPurpose: formData.systemPurpose || undefined,
         hasPersonalData: formData.hasPersonalData,
-        userId,
       })
 
-      router.push(`/systems/${system.systemId}`)
-      router.refresh()
+      if (result?.success && result.systemId) {
+        router.push(`/systems/${result.systemId}`)
+        router.refresh()
+        return
+      }
+
+      setErrorMessage(result?.error || 'Не удалось создать систему')
     } catch (error) {
       console.error('Ошибка:', error)
-      alert('Произошла ошибка при создании системы')
+      setErrorMessage('Произошла ошибка при создании системы')
     } finally {
       setIsSubmitting(false)
     }
@@ -78,6 +82,18 @@ export default function CreateSystemForm({ userId }: CreateSystemFormProps) {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="systemPurpose">Назначение системы</Label>
+            <textarea
+              id="systemPurpose"
+              value={formData.systemPurpose}
+              onChange={(e) => handleChange('systemPurpose', e.target.value)}
+              placeholder="Краткое описание задач и функций"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              rows={3}
+            />
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -103,6 +119,10 @@ export default function CreateSystemForm({ userId }: CreateSystemFormProps) {
           </Button>
         </Link>
       </div>
+
+      {errorMessage && (
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      )}
     </form>
   )
 }

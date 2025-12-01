@@ -42,6 +42,10 @@
   --color-border: oklch(0.928 0.006 264.531);
   --color-input: oklch(0.928 0.006 264.531);
   --color-ring: oklch(0.707 0.022 261.325);
+
+  /* Toast */
+  --toast-bg: #ffffff;
+  --toast-color: #1f2937;
 }
 
 /* Темная тема */
@@ -73,6 +77,10 @@
   --color-border: oklch(1 0 0 / 10%);
   --color-input: oklch(1 0 0 / 15%);
   --color-ring: oklch(0.551 0.027 264.364);
+
+  /* Toast */
+  --toast-bg: #1f2937;
+  --toast-color: #f9fafb;
 }
 
 /* @apply is a Tailwind CSS directive */

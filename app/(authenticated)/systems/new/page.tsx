@@ -18,7 +18,7 @@ export default async function NewSystemPage() {
         </p>
       </div>
 
-      <CreateSystemForm userId={session.user.id} />
+      <CreateSystemForm />
     </div>
   )
 }

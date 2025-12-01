@@ -8,8 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FiEdit2, FiPlus, FiAlertCircle, FiSave, FiX } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 import { updateSystem } from '../actions/updateSystem'
+import { deleteSystem } from '../actions/createSystem'
+import { createVersion } from './versions/actions'
 import Version from './Version'
+import SystemDocuments from './documents/SystemDocuments'
 
 interface SystemDetailViewProps {
   system: any
@@ -21,6 +25,8 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
   const [selectedVersionIndex, setSelectedVersionIndex] = useState(0)
   const [isEditingSystem, setIsEditingSystem] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isCreatingVersion, setIsCreatingVersion] = useState(false)
   const [formData, setFormData] = useState({
     systemName: system.systemName || '',
     systemShortName: system.systemShortName || '',
@@ -58,9 +64,38 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
       router.refresh()
     } catch (error) {
       console.error('Ошибка:', error)
-      alert('Произошла ошибка при сохранении изменений')
+      toast.error('Произошла ошибка при сохранении изменений')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDeleteSystem = async () => {
+    if (isDeleting) {
+      return
+    }
+
+    const confirmed = window.confirm('Удалить систему? Это действие нельзя отменить.')
+    if (!confirmed) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const result = await deleteSystem(system.systemId)
+      if (!result?.success) {
+        toast.error(result?.error || 'Не удалось удалить систему')
+        return
+      }
+
+      toast.success('Система удалена')
+      router.push('/systems')
+      router.refresh()
+    } catch (error) {
+      console.error('Ошибка удаления системы:', error)
+      toast.error('Ошибка при удалении системы')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -72,6 +107,26 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
       hasPersonalData: system.hasPersonalData || 0,
     })
     setIsEditingSystem(false)
+  }
+
+  const handleCreateVersion = async () => {
+    if (isCreatingVersion) return
+
+    setIsCreatingVersion(true)
+    try {
+      const result = await createVersion(system.systemId)
+      if (!result?.success) {
+        throw new Error(result?.error || 'Не удалось создать версию')
+      }
+
+      toast.success('Версия создана')
+      router.refresh()
+    } catch (error) {
+      console.error('Ошибка создания версии:', error)
+      toast.error(error instanceof Error ? error.message : 'Ошибка при создании версии')
+    } finally {
+      setIsCreatingVersion(false)
+    }
   }
 
   return (
@@ -112,11 +167,19 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
               <CardTitle>Основная информация</CardTitle>
               {isEditingSystem ? (
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteSystem}
+                    disabled={isSaving || isDeleting}
+                  >
+                    {isDeleting ? 'Удаление...' : 'Удалить систему'}
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={handleCancelEdit}
-                    disabled={isSaving}
+                    disabled={isSaving || isDeleting}
                   >
                     <FiX className="h-4 w-4 mr-2" />
                     Отмена
@@ -124,7 +187,7 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
                   <Button 
                     size="sm"
                     onClick={handleSaveSystem}
-                    disabled={isSaving}
+                    disabled={isSaving || isDeleting}
                   >
                     <FiSave className="h-4 w-4 mr-2" />
                     {isSaving ? 'Сохранение...' : 'Сохранить'}
@@ -265,9 +328,15 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
                   <span className="lg:hidden">{version.versionCode || index + 1}</span>
                 </button>
               ))}
-              <Button size="sm" variant="outline" className="whitespace-nowrap">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="whitespace-nowrap"
+                onClick={handleCreateVersion}
+                disabled={isCreatingVersion}
+              >
                 <FiPlus className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Добавить</span>
+                <span className="hidden lg:inline">{isCreatingVersion ? 'Создание...' : 'Добавить'}</span>
               </Button>
             </div>
           )}
@@ -284,9 +353,13 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
                 <CardContent className="py-12">
                   <div className="text-center">
                     <p className="text-muted-foreground mb-4">Нет версий</p>
-                    <Button size="sm">
+                    <Button 
+                      size="sm"
+                      onClick={handleCreateVersion}
+                      disabled={isCreatingVersion}
+                    >
                       <FiPlus className="h-4 w-4 mr-2" />
-                      Добавить первую версию
+                      {isCreatingVersion ? 'Создание...' : 'Добавить первую версию'}
                     </Button>
                   </div>
                 </CardContent>
@@ -297,13 +370,7 @@ export default function SystemDetailView({ system }: SystemDetailViewProps) {
       )}
 
       {activeTab === 'documents' && (
-        <Card>
-          <CardContent className="py-12">
-            <p className="text-center text-muted-foreground">
-              Документов: {system._count?.documents || 0}
-            </p>
-          </CardContent>
-        </Card>
+        <SystemDocuments systemId={system.systemId} />
       )}
     </div>
   )

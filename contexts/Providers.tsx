@@ -22,12 +22,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ThemeProvider>
           {children}
           <Toaster
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
-              duration: 4000,
+              duration: 5000,
               style: {
                 background: 'var(--toast-bg)',
                 color: 'var(--toast-color)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                border: '1px solid rgba(0, 0, 0, 0.1)',
               },
               success: {
                 iconTheme: {

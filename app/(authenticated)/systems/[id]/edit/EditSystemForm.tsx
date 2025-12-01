@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
+import { deleteSystem } from '@/app/(authenticated)/systems/actions'
 
 interface EditSystemFormProps {
   system: any
@@ -15,6 +16,35 @@ interface EditSystemFormProps {
 export default function EditSystemForm({ system }: EditSystemFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (isDeleting) {
+      return
+    }
+
+    const confirmed = window.confirm('Удалить систему? Это действие нельзя отменить.')
+    if (!confirmed) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const result = await deleteSystem(system.systemId)
+      if (result?.success) {
+        toast.success('Система удалена')
+        router.push('/systems')
+        router.refresh()
+        return
+      }
+      toast.error(result?.error || 'Не удалось удалить систему')
+    } catch (error) {
+      console.error('Error deleting system:', error)
+      toast.error('Ошибка при удалении системы')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -40,9 +70,23 @@ export default function EditSystemForm({ system }: EditSystemFormProps) {
             Изменение информации о системе
           </p>
         </div>
-        <Button variant="outline" onClick={() => router.back()}>
-          Отмена
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+          >
+            Отмена
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Удаление...' : 'Удалить систему'}
+          </Button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -104,7 +148,7 @@ export default function EditSystemForm({ system }: EditSystemFormProps) {
           >
             Отмена
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading || isDeleting}>
             {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
           </Button>
         </div>

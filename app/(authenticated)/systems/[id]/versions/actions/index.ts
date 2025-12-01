@@ -1,3 +1,4 @@
+export { createVersion } from './createVersion'
 export { updateCommon } from './updateCommon'
 export { updateOrganization } from './updateOrganization'
 export { updateTechnical } from './updateTechnical'
@@ -11,3 +12,11 @@ export { uploadSchema } from './uploadSchema'
 export { deleteSchema } from './deleteSchema'
 export { downloadSchema } from './downloadSchema'
 export { saveSchemaToPublic } from './saveSchemaToPublic'
+export { 
+  getDataStreams, 
+  getIncomingDataStreams, 
+  getAllVersionsForSelect, 
+  createDataStream, 
+  updateDataStream, 
+  deleteDataStream 
+} from './dataStreams'
