@@ -95,12 +95,15 @@ export async function uploadUserGuide(
       await writeFile(filePath, buffer)
     }
 
+    // Обрезаем title до 20 символов (ограничение БД)
+    const truncatedTitle = (title || file.name).substring(0, 20)
+
     // Создаем или обновляем запись в intgr_2_1_user_guides
     const userGuide = await prisma.userGuide.upsert({
       where: { versionId },
       create: {
         versionId,
-        title: title || file.name,
+        title: truncatedTitle,
         yearPublished: yearPublished ? parseInt(yearPublished) : null,
         authorsList: authorsList || null,
         publisher: publisher || null,
@@ -111,7 +114,7 @@ export async function uploadUserGuide(
         lastChangeDate: new Date(),
       },
       update: {
-        title: title || file.name,
+        title: truncatedTitle,
         yearPublished: yearPublished ? parseInt(yearPublished) : null,
         authorsList: authorsList || null,
         publisher: publisher || null,
