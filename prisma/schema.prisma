@@ -115,6 +115,35 @@ model DocumentKind {
   @@map("c1_doc_kind")
 }
 
+model Dbms {
+  dbmsId          Int     @id(map: "ref_dbms_pkey") @default(autoincrement()) @map("dbms_id")
+  dbmsName        String  @unique(map: "ref_dbms_dbms_name_key") @map("dbms_name") @db.VarChar(100)
+  dbmsDescription String? @map("dbms_description")
+
+  @@map("c2_dbms")
+}
+
+model OperatingSystem {
+  id           Int       @id @default(autoincrement())
+  osName       String    @unique(map: "c3_opersys_name_key") @map("os_name") @db.VarChar(100)
+  vendor       String?   @db.VarChar(100)
+  osVersion    String?   @map("os_version") @db.VarChar(50)
+  architecture String?   @db.VarChar(20)
+  osType       String?   @map("os_type") @db.VarChar(50)
+  isServer     Boolean?  @default(false) @map("is_server")
+  isSupported  Boolean?  @default(true) @map("is_supported")
+  endOfSupport DateTime? @map("end_of_support") @db.Date
+  description  String?
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  @@index([isSupported], map: "idx_c3_opersys_is_supported")
+  @@index([osName], map: "idx_c3_opersys_name")
+  @@index([osType], map: "idx_c3_opersys_os_type")
+  @@index([vendor], map: "idx_c3_opersys_vendor")
+  @@map("c3_opersys")
+}
+
 model DocumentFullText {
   documentId                                                                                                          Int                @id(map: "xpkintgr4") @map("document_id")
   fileName                                                                                                            String?            @map("file_name") @db.VarChar(100)
