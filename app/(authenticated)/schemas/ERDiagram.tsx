@@ -51,6 +51,8 @@ interface ERDiagramProps {
   onNodePositionsChange?: (positions: Record<string, { x: number; y: number }>) => void
   initialEdgeOffsets?: Record<string, number>
   onEdgeOffsetsChange?: (offsets: Record<string, number>) => void
+  initialEdgeHandles?: Record<string, { sourceHandle: string; targetHandle: string }>
+  onEdgeHandlesChange?: (handles: Record<string, { sourceHandle: string; targetHandle: string }>) => void
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
 }
@@ -155,74 +157,63 @@ function AdjustableEdge(props: EdgeProps) {
     targetY,
     sourcePosition,
     targetPosition,
+    source,
+    target,
+    sourceHandleId,
+    targetHandleId,
   } = props
 
   const offset = data?.offset ?? 0
   const { setEdges } = useReactFlow()
   const [isDragging, setIsDragging] = useState(false)
-  const [dragOrientation, setDragOrientation] = useState<'horizontal' | 'vertical'>('horizontal')
   const pathRef = useRef<SVGPathElement | null>(null)
 
-  const [edgePath] = getSmoothStepPath({
+  // Определяем тип соединения
+  const isVerticalLayout = sourcePosition === targetPosition
+  const isHorizontalConnection = !isVerticalLayout // Right→Left или Left→Right
+  
+  // Для горизонтальных соединений используем centerX для позиционирования вертикального сегмента
+  // Для вертикальных соединений используем offset
+  const defaultCenterX = (sourceX + targetX) / 2
+  const baseOffset = isVerticalLayout ? 50 : 0
+
+  const pathOptions: Parameters<typeof getSmoothStepPath>[0] = {
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-    offset,
-  })
+  }
 
-  const getOrientationAtPointer = useCallback((event: React.MouseEvent<SVGPathElement>) => {
-    const path = pathRef.current
-    if (!path) return 'horizontal'
+  if (isHorizontalConnection) {
+    // Для Right→Left: centerX определяет где будет вертикальный сегмент
+    pathOptions.centerX = defaultCenterX + offset
+  } else {
+    // Для вертикальных связей (обе точки с одной стороны)
+    pathOptions.offset = baseOffset + offset
+  }
 
-    const svg = path.ownerSVGElement
-    if (!svg) return 'horizontal'
-
-    const point = svg.createSVGPoint()
-    point.x = event.clientX
-    point.y = event.clientY
-
-    const ctm = path.getScreenCTM()
-    if (!ctm) return 'horizontal'
-    const localPoint = point.matrixTransform(ctm.inverse())
-
-    const totalLength = path.getTotalLength()
-    let closestLength = 0
-    let minDist = Infinity
-    const step = Math.max(1, totalLength / 200)
-
-    for (let l = 0; l <= totalLength; l += step) {
-      const pt = path.getPointAtLength(l)
-      const dist = (pt.x - localPoint.x) ** 2 + (pt.y - localPoint.y) ** 2
-      if (dist < minDist) {
-        minDist = dist
-        closestLength = l
-      }
-    }
-
-    const delta = Math.min(5, totalLength / 10)
-    const before = path.getPointAtLength(Math.max(0, closestLength - delta))
-    const after = path.getPointAtLength(Math.min(totalLength, closestLength + delta))
-    const dx = after.x - before.x
-    const dy = after.y - before.y
-
-    return Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical'
-  }, [])
+  const [edgePath] = getSmoothStepPath(pathOptions)
 
   const handleMouseDown = useCallback(
     (event: React.MouseEvent<SVGPathElement>) => {
       event.stopPropagation()
-      const orientation = getOrientationAtPointer(event)
-      setDragOrientation(orientation)
       setIsDragging(true)
-      const startCoord = orientation === 'horizontal' ? event.clientY : event.clientX
       const initialOffset = offset
-      const direction = orientation === 'horizontal' ? 1 : -1
+      const startX = event.clientX
+      
+      // Определяем тип соединения
+      const isHorizontalConn = sourcePosition !== targetPosition
+      const direction = isHorizontalConn ? 1 : (sourcePosition === Position.Right ? 1 : -1)
+
+      // Порог для переключения сторон (в пикселях смещения)
+      const switchThreshold = 150
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
-        const delta = (orientation === 'horizontal' ? moveEvent.clientY : moveEvent.clientX) - startCoord
+        const deltaX = moveEvent.clientX - startX
+        const newOffset = initialOffset + deltaX * direction
+        
         setEdges((currentEdges) =>
           currentEdges.map((edge) =>
             edge.id === id
@@ -230,7 +221,7 @@ function AdjustableEdge(props: EdgeProps) {
                   ...edge,
                   data: {
                     ...edge.data,
-                    offset: clamp(initialOffset + delta * direction, -200, 200),
+                    offset: clamp(newOffset, -400, 400),
                   },
                 }
               : edge
@@ -247,7 +238,41 @@ function AdjustableEdge(props: EdgeProps) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
     },
-    [getOrientationAtPointer, id, offset, setEdges]
+    [id, offset, setEdges, sourcePosition, targetPosition]
+  )
+
+  // Функция для переключения сторон подключения (вызывается по двойному клику)
+  const handleDoubleClick = useCallback(
+    (event: React.MouseEvent<SVGPathElement>) => {
+      event.stopPropagation()
+      
+      setEdges((currentEdges) =>
+        currentEdges.map((edge) => {
+          if (edge.id !== id) return edge
+          
+          // Переключаем стороны: left↔right для обеих точек
+          const currentSourceSide = edge.sourceHandle?.includes('-right') ? 'right' : 'left'
+          const currentTargetSide = edge.targetHandle?.includes('-right') ? 'right' : 'left'
+          
+          const newSourceSide = currentSourceSide === 'right' ? 'left' : 'right'
+          const newTargetSide = currentTargetSide === 'right' ? 'left' : 'right'
+          
+          const sourceHandleBase = edge.sourceHandle?.replace(/-source-(left|right)$/, '')
+          const targetHandleBase = edge.targetHandle?.replace(/-target-(left|right)$/, '')
+          
+          return {
+            ...edge,
+            sourceHandle: `${sourceHandleBase}-source-${newSourceSide}`,
+            targetHandle: `${targetHandleBase}-target-${newTargetSide}`,
+            data: {
+              ...edge.data,
+              offset: 0, // Сбрасываем offset при переключении
+            },
+          }
+        })
+      )
+    },
+    [id, setEdges]
   )
 
   const highlightStyle = isDragging
@@ -268,6 +293,7 @@ function AdjustableEdge(props: EdgeProps) {
         stroke="transparent"
         strokeWidth={20}
         onMouseDown={handleMouseDown}
+        onDoubleClick={handleDoubleClick}
         className={isDragging ? 'cursor-grabbing' : 'cursor-grab'}
       />
     </>
@@ -278,17 +304,26 @@ const edgeTypes = {
   adjustable: AdjustableEdge,
 }
 
-export default function ERDiagram({ tables, initialNodePositions, onNodePositionsChange, initialEdgeOffsets, onEdgeOffsetsChange, isFullscreen = false, onToggleFullscreen }: ERDiagramProps) {
+export default function ERDiagram({ tables, initialNodePositions, onNodePositionsChange, initialEdgeOffsets, onEdgeOffsetsChange, initialEdgeHandles, onEdgeHandlesChange, isFullscreen = false, onToggleFullscreen }: ERDiagramProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
   const edgeOffsetsRef = useRef<Map<string, number>>(new Map())
+  const edgeHandlesRef = useRef<Map<string, { sourceHandle: string; targetHandle: string }>>(new Map())
   const lastSentOffsetsRef = useRef<string>('')
+  const lastSentHandlesRef = useRef<string>('')
+  const isInitializedRef = useRef(false)
 
+  // Инициализируем refs только при первой загрузке
   useEffect(() => {
-    edgeOffsetsRef.current = new Map(Object.entries(initialEdgeOffsets || {}))
-    lastSentOffsetsRef.current = JSON.stringify(initialEdgeOffsets || {})
-  }, [initialEdgeOffsets])
+    if (!isInitializedRef.current) {
+      edgeOffsetsRef.current = new Map(Object.entries(initialEdgeOffsets || {}))
+      lastSentOffsetsRef.current = JSON.stringify(initialEdgeOffsets || {})
+      edgeHandlesRef.current = new Map(Object.entries(initialEdgeHandles || {}))
+      lastSentHandlesRef.current = JSON.stringify(initialEdgeHandles || {})
+    }
+  }, [initialEdgeOffsets, initialEdgeHandles])
 
+  // Отслеживаем изменения offsets
   useEffect(() => {
     const map = new Map(edges.map((edge) => [edge.id, edge.data?.offset ?? 0]))
     edgeOffsetsRef.current = map
@@ -300,12 +335,37 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
     }
   }, [edges, onEdgeOffsetsChange])
 
-  // Функция для пересчёта handles связей на основе текущих позиций узлов
-  const recalculateEdges = useCallback((currentNodes: Node[]) => {
+  // Отслеживаем изменения handles
+  useEffect(() => {
+    const map = new Map(edges.map((edge) => [edge.id, { sourceHandle: edge.sourceHandle || '', targetHandle: edge.targetHandle || '' }]))
+    edgeHandlesRef.current = map
+    const obj = Object.fromEntries(map)
+    const serialized = JSON.stringify(obj)
+    if (serialized !== lastSentHandlesRef.current) {
+      lastSentHandlesRef.current = serialized
+      onEdgeHandlesChange?.(obj)
+    }
+  }, [edges, onEdgeHandlesChange])
+
+  // Функция для создания связей - использует сохранённые handles если есть,
+  // иначе вычисляет по позиции таблиц (только при первой загрузке)
+  const recalculateEdges = useCallback((currentNodes: Node[], existingEdges?: Edge[]) => {
     const nodePositions: Record<string, { x: number; y: number }> = {}
     currentNodes.forEach(node => {
       nodePositions[node.id] = node.position
     })
+
+    // Создаём map текущих offsets из существующих edges
+    const currentOffsets = new Map<string, number>()
+    const currentHandles = new Map<string, { sourceHandle: string; targetHandle: string }>()
+    if (existingEdges) {
+      existingEdges.forEach(edge => {
+        currentOffsets.set(edge.id, edge.data?.offset ?? 0)
+        if (edge.sourceHandle && edge.targetHandle) {
+          currentHandles.set(edge.id, { sourceHandle: edge.sourceHandle, targetHandle: edge.targetHandle })
+        }
+      })
+    }
 
     const updatedEdges: Edge[] = []
 
@@ -316,52 +376,44 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
 
         if (!sourcePos || !targetPos) return
 
-        // Вычисляем расстояния для всех 4 комбинаций подключения
-        const deltaX = targetPos.x - sourcePos.x
-        const deltaY = targetPos.y - sourcePos.y
+        const edgeId = `${table.name}-${fk.referencedTable}-${fkIndex}`
         
-        // Расстояние для подключения справа-слева (right to left)
-        const distRightLeft = Math.sqrt(Math.pow(Math.abs(deltaX), 2) + Math.pow(deltaY, 2))
-        
-        // Расстояние для подключения слева-справа (left to right)  
-        const distLeftRight = Math.sqrt(Math.pow(Math.abs(deltaX), 2) + Math.pow(deltaY, 2))
-        
-        // Расстояние для подключения справа-справа (right to right)
-        const distRightRight = Math.sqrt(Math.pow(Math.abs(deltaX) + 400, 2) + Math.pow(deltaY, 2))
-        
-        // Расстояние для подключения слева-слева (left to left)
-        const distLeftLeft = Math.sqrt(Math.pow(Math.abs(deltaX) + 400, 2) + Math.pow(deltaY, 2))
-        
-        // Выбираем handles в зависимости от взаимного расположения таблиц
+        // Приоритет handles: существующий из edges > ref > вычисленный по позиции
         let sourceHandle: string
         let targetHandle: string
         
-        // Если таблицы расположены почти горизонтально (deltaX значительно больше deltaY)
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          if (deltaX > 0) {
-            // Целевая таблица справа - используем правый source и левый target
-            sourceHandle = `${table.name}-${fk.columnName}-source-right`
-            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-left`
-          } else {
-            // Целевая таблица слева - используем левый source и правый target
-            sourceHandle = `${table.name}-${fk.columnName}-source-left`
-            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-right`
-          }
+        const savedHandles = currentHandles.get(edgeId) || edgeHandlesRef.current.get(edgeId)
+        
+        if (savedHandles && savedHandles.sourceHandle && savedHandles.targetHandle) {
+          // Используем сохранённые handles
+          sourceHandle = savedHandles.sourceHandle
+          targetHandle = savedHandles.targetHandle
         } else {
-          // Таблицы расположены вертикально - выбираем одну сторону для обоих
-          // Используем направление по X для выбора стороны
-          if (deltaX >= 0) {
-            // Используем правые handles для обоих
-            sourceHandle = `${table.name}-${fk.columnName}-source-right`
-            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-right`
+          // Вычисляем handles по позиции таблиц (только при первой загрузке)
+          const deltaX = targetPos.x - sourcePos.x
+          const deltaY = targetPos.y - sourcePos.y
+          
+          if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 0) {
+              sourceHandle = `${table.name}-${fk.columnName}-source-right`
+              targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-left`
+            } else {
+              sourceHandle = `${table.name}-${fk.columnName}-source-left`
+              targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-right`
+            }
           } else {
-            // Используем левые handles для обоих
-            sourceHandle = `${table.name}-${fk.columnName}-source-left`
-            targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-left`
+            if (deltaX >= 0) {
+              sourceHandle = `${table.name}-${fk.columnName}-source-right`
+              targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-right`
+            } else {
+              sourceHandle = `${table.name}-${fk.columnName}-source-left`
+              targetHandle = `${fk.referencedTable}-${fk.referencedColumn}-target-left`
+            }
           }
         }
-
-        const edgeId = `${table.name}-${fk.referencedTable}-${fkIndex}`
+        
+        // Приоритет offset: существующий из edges > ref > 0
+        const edgeOffset = currentOffsets.get(edgeId) ?? edgeOffsetsRef.current.get(edgeId) ?? 0
 
         updatedEdges.push({
           id: edgeId,
@@ -375,7 +427,7 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
           labelStyle: { fontSize: 10, fill: '#666', fontWeight: 500 },
           labelBgStyle: { fill: '#fff', fillOpacity: 0.9 },
           data: {
-            offset: edgeOffsetsRef.current.get(edgeId) ?? 0,
+            offset: edgeOffset,
           },
           markerEnd: {
             type: MarkerType.ArrowClosed,
@@ -394,19 +446,15 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
     return updatedEdges
   }, [tables])
 
-  // Обработчик изменения узлов с пересчётом связей
+  // Обработчик изменения узлов - только сохраняем позиции, НЕ пересчитываем связи
   const handleNodesChange = useCallback((changes: any) => {
     onNodesChange(changes)
     
-    // Пересчитываем связи при перемещении узлов
+    // Сохраняем позиции при окончании перетаскивания
     const hasMoveChange = changes.some((change: any) => change.type === 'position' && change.dragging === false)
     
     if (hasMoveChange) {
       setNodes((currentNodes) => {
-        // Пересчитываем связи
-        const updatedEdges = recalculateEdges(currentNodes)
-        setEdges(updatedEdges)
-        
         // Сохраняем позиции узлов асинхронно
         setTimeout(() => {
           if (onNodePositionsChange) {
@@ -421,13 +469,20 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
         return currentNodes
       })
     }
-  }, [onNodesChange, recalculateEdges, setNodes, setEdges, onNodePositionsChange])
+  }, [onNodesChange, setNodes, onNodePositionsChange])
 
+  // Генерация nodes и edges - только при изменении tables или начальных позиций
   useEffect(() => {
+    // Предотвращаем повторную инициализацию
+    if (isInitializedRef.current && tables.length > 0 && nodes.length > 0) {
+      return
+    }
+    
+    // Инициализируем refs при первой загрузке
     edgeOffsetsRef.current = new Map(Object.entries(initialEdgeOffsets || {}))
-    lastSentOffsetsRef.current = JSON.stringify(initialEdgeOffsets || {})
+    edgeHandlesRef.current = new Map(Object.entries(initialEdgeHandles || {}))
 
-    // Генерируем узлы и рёбра из таблиц
+    // Генерируем узлы из таблиц
     const generatedNodes: Node[] = []
 
     // Размещаем таблицы по сетке для лучшей видимости связей
@@ -441,13 +496,11 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
       if (initialNodePositions && initialNodePositions[table.name]) {
         x = initialNodePositions[table.name].x
         y = initialNodePositions[table.name].y
-        console.log(`Loading saved position for ${table.name}:`, x, y)
       } else {
         const row = Math.floor(index / cols)
         const col = index % cols
         x = col * spacing + 100
         y = row * spacing + 100
-        console.log(`Using grid position for ${table.name}:`, x, y)
       }
 
       generatedNodes.push({
@@ -457,17 +510,15 @@ export default function ERDiagram({ tables, initialNodePositions, onNodePosition
         data: table,
       })
     })
-
-    console.log('Generated nodes:', generatedNodes.length)
-    console.log('Initial positions received:', initialNodePositions)
     
     setNodes(generatedNodes)
     
     // Вычисляем начальные связи
     const initialEdges = recalculateEdges(generatedNodes)
-    console.log('Generated edges:', initialEdges.length)
     setEdges(initialEdges)
-  }, [tables, initialNodePositions, initialEdgeOffsets, setNodes, setEdges, recalculateEdges])
+    
+    isInitializedRef.current = true
+  }, [tables, initialNodePositions, initialEdgeOffsets, initialEdgeHandles, setNodes, setEdges, recalculateEdges, nodes.length])
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative h-[calc(100vh-12rem)]'}`}>

@@ -1147,82 +1147,240 @@
       "primaryKeys": [
         "id"
       ]
+    },
+    {
+      "name": "c2_dbms",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "dbms_id",
+          "type": "integer",
+          "nullable": false,
+          "isPrimaryKey": true,
+          "isForeignKey": false,
+          "defaultValue": "nextval('c2_dbms_dbms_id_seq'::regclass)"
+        },
+        {
+          "name": "dbms_name",
+          "type": "character varying",
+          "nullable": false,
+          "isPrimaryKey": false,
+          "isForeignKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "dbms_description",
+          "type": "text",
+          "nullable": true,
+          "isPrimaryKey": false,
+          "isForeignKey": false,
+          "defaultValue": null
+        }
+      ],
+      "foreignKeys": [],
+      "primaryKeys": [
+        "dbms_id"
+      ]
     }
   ],
   "nodePositions": {
     "allowed_users": {
-      "x": 1867.8596682279713,
-      "y": 758.9937489838615
+      "x": 1889.377401858298,
+      "y": 688.030146177551
     },
     "c1_doc_kind": {
-      "x": 404.51498527332404,
-      "y": 154.34420256449332
+      "x": 513.1982659997002,
+      "y": 398.0725510382098
     },
     "intgr1_information_systems": {
-      "x": 849.9204969954521,
-      "y": 64.21265607773614
+      "x": 1416.6615073778032,
+      "y": 8.197473881475844
     },
     "intgr2_system_versions": {
-      "x": 1564.05617003306,
-      "y": 74.51768558519291
+      "x": 1419.9314525429827,
+      "y": 340.6489640431688
     },
     "intgr3_managing_documents": {
-      "x": 426.0199804085437,
-      "y": 310.45841564129694
+      "x": 496.07824111378306,
+      "y": 516.5787636002331
     },
     "intgr4_document_full_text": {
-      "x": 1170.3594975951555,
-      "y": 413.8846295972395
+      "x": 988.2060067780695,
+      "y": 739.5321903484592
     },
     "intgr_2_1_user_guides": {
-      "x": 1283.5504884015086,
-      "y": 836.6358534488528
+      "x": 992.0086165959733,
+      "y": 97.59660460093733
     },
     "intgr_2_2_1_exchange_formats": {
-      "x": 2195.3840255097593,
-      "y": 481.96420743760916
+      "x": 1896.783990373186,
+      "y": 361.70146151390304
     },
     "intgr_2_2_data_streams": {
-      "x": 2130.983771928271,
-      "y": 117.19408829333095
+      "x": 1886.7158098905543,
+      "y": 37.65948474243527
     },
     "intgr_2_3_schemas": {
-      "x": 467.1032761421808,
-      "y": 835.3224333988961
+      "x": 984.7699522562609,
+      "y": 452.6814471667343
     },
     "network_layouts": {
-      "x": 2132.962283516732,
-      "y": 838.051566563569
+      "x": 2155.937704461318,
+      "y": 721.94224884465
+    },
+    "c2_dbms": {
+      "x": 483.5427342850588,
+      "y": 243.14972074737105
     }
   },
   "edgeOffsets": {
-    "intgr1_information_systems-allowed_users-0": 0,
-    "intgr1_information_systems-allowed_users-1": 0,
+    "intgr1_information_systems-allowed_users-0": -315,
+    "intgr1_information_systems-allowed_users-1": -331,
     "intgr2_system_versions-intgr1_information_systems-0": 0,
     "intgr2_system_versions-allowed_users-1": 0,
-    "intgr2_system_versions-allowed_users-2": 0,
-    "intgr3_managing_documents-intgr1_information_systems-0": 15,
+    "intgr2_system_versions-allowed_users-2": 17,
+    "intgr3_managing_documents-intgr1_information_systems-0": -182,
     "intgr3_managing_documents-intgr4_document_full_text-1": 0,
     "intgr3_managing_documents-intgr4_document_full_text-2": 0,
-    "intgr3_managing_documents-allowed_users-3": 0,
-    "intgr3_managing_documents-c1_doc_kind-4": 105,
-    "intgr4_document_full_text-allowed_users-0": 0,
-    "intgr_2_1_user_guides-intgr4_document_full_text-0": 0,
-    "intgr_2_1_user_guides-allowed_users-1": 0,
-    "intgr_2_1_user_guides-intgr2_system_versions-2": 0,
-    "intgr_2_2_1_exchange_formats-intgr4_document_full_text-0": 0,
-    "intgr_2_2_1_exchange_formats-intgr4_document_full_text-1": 0,
-    "intgr_2_2_1_exchange_formats-allowed_users-2": 0,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-3": 0,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-4": 0,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-5": 0,
-    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-6": 0,
+    "intgr3_managing_documents-allowed_users-3": -2,
+    "intgr3_managing_documents-c1_doc_kind-4": 0,
+    "intgr4_document_full_text-allowed_users-0": 156,
+    "intgr_2_1_user_guides-intgr4_document_full_text-0": 33,
+    "intgr_2_1_user_guides-allowed_users-1": 167,
+    "intgr_2_1_user_guides-intgr2_system_versions-2": -3,
+    "intgr_2_2_1_exchange_formats-intgr4_document_full_text-0": 143,
+    "intgr_2_2_1_exchange_formats-intgr4_document_full_text-1": 197,
+    "intgr_2_2_1_exchange_formats-allowed_users-2": -14,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-3": 25,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-4": 5,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-5": 26,
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-6": 4,
     "intgr_2_2_data_streams-allowed_users-0": 0,
-    "intgr_2_2_data_streams-intgr2_system_versions-1": 0,
-    "intgr_2_2_data_streams-intgr2_system_versions-2": 0,
-    "intgr_2_3_schemas-intgr4_document_full_text-0": -48,
-    "intgr_2_3_schemas-allowed_users-1": 0,
-    "intgr_2_3_schemas-intgr2_system_versions-2": 0,
-    "network_layouts-allowed_users-0": 0
+    "intgr_2_2_data_streams-intgr2_system_versions-1": -26,
+    "intgr_2_2_data_streams-intgr2_system_versions-2": -6,
+    "intgr_2_3_schemas-intgr4_document_full_text-0": 0,
+    "intgr_2_3_schemas-allowed_users-1": -195,
+    "intgr_2_3_schemas-intgr2_system_versions-2": -21,
+    "network_layouts-allowed_users-0": 7
+  },
+  "edgeHandles": {
+    "intgr1_information_systems-allowed_users-0": {
+      "sourceHandle": "intgr1_information_systems-user_id-source-right",
+      "targetHandle": "allowed_users-user_id-target-right"
+    },
+    "intgr1_information_systems-allowed_users-1": {
+      "sourceHandle": "intgr1_information_systems-last_change_user-source-right",
+      "targetHandle": "allowed_users-user_id-target-right"
+    },
+    "intgr2_system_versions-intgr1_information_systems-0": {
+      "sourceHandle": "intgr2_system_versions-system_id-source-left",
+      "targetHandle": "intgr1_information_systems-system_id-target-left"
+    },
+    "intgr2_system_versions-allowed_users-1": {
+      "sourceHandle": "intgr2_system_versions-user_id-source-right",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr2_system_versions-allowed_users-2": {
+      "sourceHandle": "intgr2_system_versions-last_change_user-source-right",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr3_managing_documents-intgr1_information_systems-0": {
+      "sourceHandle": "intgr3_managing_documents-system_id-source-right",
+      "targetHandle": "intgr1_information_systems-system_id-target-left"
+    },
+    "intgr3_managing_documents-intgr4_document_full_text-1": {
+      "sourceHandle": "intgr3_managing_documents-scan_document_id-source-right",
+      "targetHandle": "intgr4_document_full_text-document_id-target-left"
+    },
+    "intgr3_managing_documents-intgr4_document_full_text-2": {
+      "sourceHandle": "intgr3_managing_documents-text_document_id-source-right",
+      "targetHandle": "intgr4_document_full_text-document_id-target-left"
+    },
+    "intgr3_managing_documents-allowed_users-3": {
+      "sourceHandle": "intgr3_managing_documents-user_id-source-right",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr3_managing_documents-c1_doc_kind-4": {
+      "sourceHandle": "intgr3_managing_documents-doc_kind_id-source-right",
+      "targetHandle": "c1_doc_kind-doc_kind_id-target-right"
+    },
+    "intgr4_document_full_text-allowed_users-0": {
+      "sourceHandle": "intgr4_document_full_text-user_id-source-right",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr_2_1_user_guides-intgr4_document_full_text-0": {
+      "sourceHandle": "intgr_2_1_user_guides-fulltext_document_id-source-left",
+      "targetHandle": "intgr4_document_full_text-document_id-target-left"
+    },
+    "intgr_2_1_user_guides-allowed_users-1": {
+      "sourceHandle": "intgr_2_1_user_guides-user_id-source-right",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr_2_1_user_guides-intgr2_system_versions-2": {
+      "sourceHandle": "intgr_2_1_user_guides-version_id-source-right",
+      "targetHandle": "intgr2_system_versions-version_id-target-left"
+    },
+    "intgr_2_2_1_exchange_formats-intgr4_document_full_text-0": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-format_description_document_id-source-left",
+      "targetHandle": "intgr4_document_full_text-document_id-target-right"
+    },
+    "intgr_2_2_1_exchange_formats-intgr4_document_full_text-1": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-format_sample_document_id-source-left",
+      "targetHandle": "intgr4_document_full_text-document_id-target-right"
+    },
+    "intgr_2_2_1_exchange_formats-allowed_users-2": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-user_id-source-left",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-3": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-stream_id-source-right",
+      "targetHandle": "intgr_2_2_data_streams-version_id-target-right"
+    },
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-4": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-stream_id-source-right",
+      "targetHandle": "intgr_2_2_data_streams-stream_id-target-right"
+    },
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-5": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-version_id-source-right",
+      "targetHandle": "intgr_2_2_data_streams-version_id-target-right"
+    },
+    "intgr_2_2_1_exchange_formats-intgr_2_2_data_streams-6": {
+      "sourceHandle": "intgr_2_2_1_exchange_formats-version_id-source-right",
+      "targetHandle": "intgr_2_2_data_streams-stream_id-target-right"
+    },
+    "intgr_2_2_data_streams-allowed_users-0": {
+      "sourceHandle": "intgr_2_2_data_streams-user_id-source-left",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr_2_2_data_streams-intgr2_system_versions-1": {
+      "sourceHandle": "intgr_2_2_data_streams-version_id-source-left",
+      "targetHandle": "intgr2_system_versions-version_id-target-right"
+    },
+    "intgr_2_2_data_streams-intgr2_system_versions-2": {
+      "sourceHandle": "intgr_2_2_data_streams-recipient_version_id-source-left",
+      "targetHandle": "intgr2_system_versions-version_id-target-right"
+    },
+    "intgr_2_3_schemas-intgr4_document_full_text-0": {
+      "sourceHandle": "intgr_2_3_schemas-data_schema_document_id-source-right",
+      "targetHandle": "intgr4_document_full_text-document_id-target-right"
+    },
+    "intgr_2_3_schemas-allowed_users-1": {
+      "sourceHandle": "intgr_2_3_schemas-user_id-source-right",
+      "targetHandle": "allowed_users-user_id-target-left"
+    },
+    "intgr_2_3_schemas-intgr2_system_versions-2": {
+      "sourceHandle": "intgr_2_3_schemas-version_id-source-right",
+      "targetHandle": "intgr2_system_versions-version_id-target-left"
+    },
+    "network_layouts-allowed_users-0": {
+      "sourceHandle": "network_layouts-user_id-source-left",
+      "targetHandle": "allowed_users-user_id-target-right"
+    }
+  },
+  "metadata": {
+    "name": "Главная общая схема",
+    "description": "Схема базы данных АИС Интеграция полная",
+    "savedAt": "2025-12-03T15:27:23.518Z",
+    "savedBy": "Мизеров Андрей Вадимович"
   }
 }

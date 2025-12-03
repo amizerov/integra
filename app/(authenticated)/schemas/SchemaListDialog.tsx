@@ -4,18 +4,18 @@ import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { FiFile, FiDownload, FiTrash2, FiCalendar, FiUser } from 'react-icons/fi'
-import { getAllSchemas, deleteSchema, downloadSchema } from './actions'
+import { FiFile, FiDownload, FiTrash2, FiCalendar, FiUser, FiDatabase } from 'react-icons/fi'
+import { getSavedSchemaFiles, deleteSchemaFile, downloadSchemaFile } from './actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
 import toast from 'react-hot-toast'
 
 interface Schema {
-  versionId: number
-  dataSchemaVersion: number
-  changesInTheCurrentVersion: string | null
-  creationDate: Date | null
-  userId: number | null
-  userName: string | null
-  fileName: string | null
+  fileName: string
+  name: string
+  description: string | null
+  savedAt: string
+  savedBy: string | null
+  tablesCount: number
 }
 
 interface SchemaListDialogProps {
@@ -27,6 +27,7 @@ interface SchemaListDialogProps {
 export default function SchemaListDialog({ open, onOpenChange, onSchemaSelect }: SchemaListDialogProps) {
   const [schemas, setSchemas] = useState<Schema[]>([])
   const [loading, setLoading] = useState(false)
+  const confirm = useConfirm()
 
   useEffect(() => {
     if (open) {
@@ -37,7 +38,7 @@ export default function SchemaListDialog({ open, onOpenChange, onSchemaSelect }:
   const loadSchemas = async () => {
     setLoading(true)
     try {
-      const result = await getAllSchemas()
+      const result = await getSavedSchemaFiles()
       if (result.success && result.schemas) {
         setSchemas(result.schemas)
       } else {
@@ -53,9 +54,9 @@ export default function SchemaListDialog({ open, onOpenChange, onSchemaSelect }:
 
   const handleDownload = async (schema: Schema) => {
     try {
-      const result = await downloadSchema(schema.versionId, schema.dataSchemaVersion)
+      const result = await downloadSchemaFile(schema.fileName)
       if (result.success && result.data && result.fileName) {
-        const blob = new Blob([result.data], { type: 'application/xml' })
+        const blob = new Blob([result.data], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -73,12 +74,20 @@ export default function SchemaListDialog({ open, onOpenChange, onSchemaSelect }:
   }
 
   const handleDelete = async (schema: Schema) => {
-    if (!confirm(`Удалить схему версии ${schema.dataSchemaVersion}?`)) {
+    const confirmed = await confirm({
+      title: 'Удаление схемы',
+      message: `Вы уверены, что хотите удалить схему "${schema.name}"? Это действие нельзя отменить.`,
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
+    
+    if (!confirmed) {
       return
     }
 
     try {
-      const result = await deleteSchema(schema.versionId, schema.dataSchemaVersion)
+      const result = await deleteSchemaFile(schema.fileName)
       if (result.success) {
         toast.success('Схема удалена')
         loadSchemas()
@@ -107,45 +116,44 @@ export default function SchemaListDialog({ open, onOpenChange, onSchemaSelect }:
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <FiFile className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">Сохранённых схем пока нет</p>
+              <p className="text-xs text-muted-foreground mt-2">Схемы сохраняются в папку public/schemas/</p>
             </div>
           ) : (
             <div className="space-y-3">
               {schemas.map((schema) => (
-                <Card key={`${schema.versionId}-${schema.dataSchemaVersion}`} className="p-4">
+                <Card key={schema.fileName} className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <FiFile className="h-4 w-4 text-primary" />
+                        <FiDatabase className="h-4 w-4 text-primary" />
                         <h3 className="font-semibold">
-                          Версия {schema.dataSchemaVersion}
+                          {schema.name}
                         </h3>
                       </div>
                       
-                      {schema.changesInTheCurrentVersion && (
+                      {schema.description && (
                         <p className="text-sm text-muted-foreground mb-2">
-                          {schema.changesInTheCurrentVersion}
+                          {schema.description}
                         </p>
                       )}
                       
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        {schema.creationDate && (
+                        {schema.savedAt && (
                           <div className="flex items-center gap-1">
                             <FiCalendar className="h-3 w-3" />
-                            {new Date(schema.creationDate).toLocaleDateString('ru-RU')}
+                            {new Date(schema.savedAt).toLocaleDateString('ru-RU')}
                           </div>
                         )}
-                        {schema.userName && (
+                        {schema.savedBy && (
                           <div className="flex items-center gap-1">
                             <FiUser className="h-3 w-3" />
-                            {schema.userName}
+                            {schema.savedBy}
                           </div>
                         )}
-                        {schema.fileName && (
-                          <div className="flex items-center gap-1">
-                            <FiFile className="h-3 w-3" />
-                            {schema.fileName}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <FiFile className="h-3 w-3" />
+                          {schema.tablesCount} таблиц
+                        </div>
                       </div>
                     </div>
                     

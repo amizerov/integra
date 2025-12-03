@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,14 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import ERDiagram from './ERDiagram'
 import SchemaListDialog from './SchemaListDialog'
-import { getDatabaseSchema, saveDatabaseSchema, exportDatabaseSchemaToErwin, getDatabaseSchemaLayout, getAllSchemas } from './actions'
+import { 
+  getDatabaseSchema, 
+  exportDatabaseSchemaToErwin, 
+  saveDatabaseSchemaToFile,
+  getSavedSchemaFiles,
+  loadSchemaFromFile,
+  getLatestSchemaFile,
+} from './actions'
 import { FiDatabase, FiRefreshCw, FiSave, FiDownload, FiFolder, FiMaximize2 } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 
@@ -37,6 +44,8 @@ export default function DatabaseSchemaClient() {
   const [nodePositions, setNodePositions] = useState<Record<string, { x: number; y: number }>>({})
   const [edgeOffsets, setEdgeOffsets] = useState<Record<string, number>>({})
   const [edgeOffsetsSeed, setEdgeOffsetsSeed] = useState<Record<string, number>>({})
+  const [edgeHandles, setEdgeHandles] = useState<Record<string, { sourceHandle: string; targetHandle: string }>>({})
+  const [edgeHandlesSeed, setEdgeHandlesSeed] = useState<Record<string, { sourceHandle: string; targetHandle: string }>>({})
   const [loading, setLoading] = useState(true)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [showSchemaListDialog, setShowSchemaListDialog] = useState(false)
@@ -45,10 +54,15 @@ export default function DatabaseSchemaClient() {
   const [schemaType, setSchemaType] = useState<'physical' | 'logical'>('physical')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [existingSchemas, setExistingSchemas] = useState<any[]>([])
-  const [selectedSchemaVersion, setSelectedSchemaVersion] = useState<number | undefined>(undefined)
+  const [selectedSchemaFileName, setSelectedSchemaFileName] = useState<string | undefined>(undefined)
   const [isNewVersion, setIsNewVersion] = useState(true)
+  const [currentSchemaName, setCurrentSchemaName] = useState<string | null>(null)
+  const isInitialLoadDone = useRef(false)
 
   useEffect(() => {
+    // Предотвращаем двойной вызов в Strict Mode
+    if (isInitialLoadDone.current) return
+    isInitialLoadDone.current = true
     loadLatestSavedSchema()
   }, [])
 
@@ -67,22 +81,21 @@ export default function DatabaseSchemaClient() {
   const loadLatestSavedSchema = async () => {
     setLoading(true)
     try {
-      // Пытаемся загрузить последнюю сохраненную схему
-      const schemasResult = await fetch('/api/schemas/latest').then(r => r.json())
+      // Пытаемся загрузить последнюю сохраненную схему из файла public/schemas/
+      const result = await getLatestSchemaFile()
       
-      if (schemasResult.success && schemasResult.schema) {
-        const { versionId, dataSchemaVersion } = schemasResult.schema
-        const result = await getDatabaseSchemaLayout(versionId, dataSchemaVersion)
-        
-        if (result.success && result.tables) {
-          setTables(result.tables)
-          setNodePositions(result.nodePositions || {})
-          const offsets = result.edgeOffsets || {}
-          setEdgeOffsets(offsets)
-          setEdgeOffsetsSeed(offsets)
-          toast.success('Загружена последняя сохраненная схема')
-          return
-        }
+      if (result.success && 'tables' in result && result.tables) {
+        setTables(result.tables)
+        setNodePositions(result.nodePositions || {})
+        const offsets = result.edgeOffsets || {}
+        setEdgeOffsets(offsets)
+        setEdgeOffsetsSeed(offsets)
+        const handles = result.edgeHandles || {}
+        setEdgeHandles(handles)
+        setEdgeHandlesSeed(handles)
+        setCurrentSchemaName(result.metadata?.name || null)
+        toast.success('Загружена последняя сохраненная схема')
+        return
       }
       
       // Если не удалось загрузить сохраненную схему, загружаем из БД
@@ -104,6 +117,9 @@ export default function DatabaseSchemaClient() {
         setNodePositions({}) // Сбрасываем позиции - будет сетка по умолчанию
         setEdgeOffsets({})
         setEdgeOffsetsSeed({})
+        setEdgeHandles({})
+        setEdgeHandlesSeed({})
+        setCurrentSchemaName(null) // Схема из БД - без имени
         toast.success('Схема базы данных загружена')
       } else {
         toast.error(result.error || 'Не удалось загрузить схему')
@@ -116,15 +132,15 @@ export default function DatabaseSchemaClient() {
     }
   }
 
-  const loadSavedSchema = async (versionId: number, dataSchemaVersion: number) => {
-    console.log('Loading schema:', versionId, dataSchemaVersion)
+  const loadSavedSchema = async (fileName: string) => {
+    console.log('Loading schema from file:', fileName)
     
     // Сначала закрываем диалог
     setShowSchemaListDialog(false)
     setLoading(true)
     
     try {
-      const result = await getDatabaseSchemaLayout(versionId, dataSchemaVersion)
+      const result = await loadSchemaFromFile(fileName)
       console.log('Loaded schema result:', result)
       if (result.success && result.tables) {
         console.log('Setting tables:', result.tables.length)
@@ -134,7 +150,11 @@ export default function DatabaseSchemaClient() {
         const offsets = result.edgeOffsets || {}
         setEdgeOffsets(offsets)
         setEdgeOffsetsSeed(offsets)
-        toast.success(`Схема версии ${dataSchemaVersion} загружена`)
+        const handles = result.edgeHandles || {}
+        setEdgeHandles(handles)
+        setEdgeHandlesSeed(handles)
+        setCurrentSchemaName(result.metadata?.name || fileName.replace('.json', ''))
+        toast.success(`Схема "${result.metadata?.name || fileName}" загружена`)
       } else {
         toast.error(result.error || 'Не удалось загрузить схему')
       }
@@ -147,15 +167,15 @@ export default function DatabaseSchemaClient() {
   }
 
   const handleSaveClick = async () => {
-    // Загружаем список существующих схем
-    const result = await getAllSchemas()
+    // Загружаем список существующих схем из файлов
+    const result = await getSavedSchemaFiles()
     if (result.success && result.schemas) {
       setExistingSchemas(result.schemas)
     }
     
     setSchemaName(`DB_Schema_${new Date().toISOString().split('T')[0]}`)
     setSchemaDescription('')
-    setSelectedSchemaVersion(undefined)
+    setSelectedSchemaFileName(undefined)
     setIsNewVersion(true)
     setShowSaveDialog(true)
   }
@@ -166,7 +186,7 @@ export default function DatabaseSchemaClient() {
       return
     }
 
-    if (!isNewVersion && !selectedSchemaVersion) {
+    if (!isNewVersion && !selectedSchemaFileName) {
       toast.error('Выберите схему для перезаписи')
       return
     }
@@ -176,20 +196,21 @@ export default function DatabaseSchemaClient() {
     console.log('Number of positions:', Object.keys(nodePositions).length)
 
     try {
-      const result = await saveDatabaseSchema(
+      const result = await saveDatabaseSchemaToFile(
         schemaName, 
         schemaDescription || null, 
         tables, 
         nodePositions,
         edgeOffsets,
-        isNewVersion ? undefined : selectedSchemaVersion
+        edgeHandles,
+        isNewVersion ? undefined : selectedSchemaFileName
       )
       if (result.success) {
-        toast.success(isNewVersion ? 'Схема сохранена в базу данных!' : 'Схема перезаписана!')
+        toast.success(isNewVersion ? 'Схема сохранена!' : 'Схема перезаписана!')
         setShowSaveDialog(false)
         setSchemaName('')
         setSchemaDescription('')
-        setSelectedSchemaVersion(undefined)
+        setSelectedSchemaFileName(undefined)
       } else {
         toast.error(result.error || 'Не удалось сохранить схему')
       }
@@ -239,39 +260,55 @@ export default function DatabaseSchemaClient() {
     <div className="space-y-6">
       {/* Панель инструментов */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowSchemaListDialog(true)} 
-            title="Открыть список схем"
-          >
-            <FiFolder className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleSaveClick} 
-            title="Сохранить схему"
-          >
-            <FiSave className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleExport} 
-            title="Экспорт в ERwin"
-          >
-            <FiDownload className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setIsFullscreen(!isFullscreen)} 
-            title="Полноэкранный режим"
-          >
-            <FiMaximize2 className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowSchemaListDialog(true)} 
+              title="Открыть список схем"
+            >
+              <FiFolder className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={loadSchema} 
+              title="Загрузить актуальную структуру из БД"
+            >
+              <FiRefreshCw className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSaveClick} 
+              title="Сохранить схему"
+            >
+              <FiSave className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsFullscreen(!isFullscreen)} 
+              title="Полноэкранный режим"
+            >
+              <FiMaximize2 className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Название текущей схемы */}
+          {currentSchemaName && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-md">
+              <FiDatabase className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{currentSchemaName}</span>
+            </div>
+          )}
+          {!currentSchemaName && tables.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-md">
+              <FiDatabase className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Схема из БД (не сохранена)</span>
+            </div>
+          )}
         </div>
         
         {/* Переключатель Физическая/Логическая */}
@@ -306,8 +343,10 @@ export default function DatabaseSchemaClient() {
         tables={tables}
         initialNodePositions={nodePositions}
         initialEdgeOffsets={edgeOffsetsSeed}
+        initialEdgeHandles={edgeHandlesSeed}
         onNodePositionsChange={setNodePositions}
         onEdgeOffsetsChange={setEdgeOffsets}
+        onEdgeHandlesChange={setEdgeHandles}
         isFullscreen={isFullscreen}
         onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
       />
@@ -318,7 +357,7 @@ export default function DatabaseSchemaClient() {
           <DialogHeader>
             <DialogTitle>Сохранить схему базы данных</DialogTitle>
             <DialogDescription>
-              Схема будет сохранена в формате ERwin XML
+              Схема будет сохранена в формате JSON в папку public/schemas/
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -330,7 +369,7 @@ export default function DatabaseSchemaClient() {
                 className="flex-1"
                 onClick={() => {
                   setIsNewVersion(true)
-                  setSelectedSchemaVersion(undefined)
+                  setSelectedSchemaFileName(undefined)
                 }}
               >
                 Новая версия
@@ -378,30 +417,30 @@ export default function DatabaseSchemaClient() {
                     ) : (
                       existingSchemas.map((schema) => (
                         <button
-                          key={schema.dataSchemaVersion}
+                          key={schema.fileName}
                           type="button"
                           onClick={() => {
-                            setSelectedSchemaVersion(schema.dataSchemaVersion)
-                            setSchemaName(schema.fileName || `DB_Schema_v${schema.dataSchemaVersion}`)
-                            setSchemaDescription(schema.changesInTheCurrentVersion || '')
+                            setSelectedSchemaFileName(schema.fileName)
+                            setSchemaName(schema.name || schema.fileName.replace('.json', ''))
+                            setSchemaDescription(schema.description || '')
                           }}
                           className={`w-full text-left px-4 py-3 hover:bg-accent transition-colors border-b border-border last:border-b-0 ${
-                            selectedSchemaVersion === schema.dataSchemaVersion ? 'bg-accent' : ''
+                            selectedSchemaFileName === schema.fileName ? 'bg-accent' : ''
                           }`}
                         >
-                          <div className="font-medium">Версия {schema.dataSchemaVersion}</div>
+                          <div className="font-medium">{schema.name}</div>
                           <div className="text-sm text-muted-foreground truncate">
-                            {schema.changesInTheCurrentVersion || 'Без описания'}
+                            {schema.description || 'Без описания'}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {new Date(schema.creationDate).toLocaleDateString('ru-RU')}
+                            {new Date(schema.savedAt).toLocaleDateString('ru-RU')} • {schema.tablesCount} таблиц
                           </div>
                         </button>
                       ))
                     )}
                   </div>
                 </div>
-                {selectedSchemaVersion && (
+                {selectedSchemaFileName && (
                   <div className="space-y-2">
                     <Label htmlFor="schema-description-update">Обновить описание</Label>
                     <Input
@@ -415,14 +454,6 @@ export default function DatabaseSchemaClient() {
               </>
             )}
 
-            <div className="text-xs text-muted-foreground">
-              <p>Схема будет сохранена в:</p>
-              <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Таблица intgr_2_3_schemas (метаданные)</li>
-                <li>Таблица intgr4_document_full_text (файл XML)</li>
-                <li>Папка public/schemas (для просмотра)</li>
-              </ul>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
@@ -440,7 +471,7 @@ export default function DatabaseSchemaClient() {
       <SchemaListDialog
         open={showSchemaListDialog}
         onOpenChange={setShowSchemaListDialog}
-        onSchemaSelect={(schema) => loadSavedSchema(schema.versionId, schema.dataSchemaVersion)}
+        onSchemaSelect={(schema) => loadSavedSchema(schema.fileName)}
       />
     </div>
   )

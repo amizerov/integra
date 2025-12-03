@@ -25,7 +25,7 @@ const navigation = [
 ]
 
 const systemNavigation = [
-  { name: 'Схема данных', href: '/schemas', icon: FiDatabase },
+  { name: 'Схемы данных', href: '/schemas', icon: FiDatabase },
   { name: 'Настройки', href: '/settings', icon: FiSettings },
 ]
 

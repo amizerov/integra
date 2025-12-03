@@ -1,6 +1,11 @@
 export { getDatabaseSchema } from './getDatabaseSchema'
-export { saveDatabaseSchema, exportDatabaseSchemaToErwin } from './saveDatabaseSchema'
-export { getAllSchemas } from './getAllSchemas'
-export { deleteSchema } from './deleteSchema'
-export { downloadSchema } from './downloadSchema'
-export { getDatabaseSchemaLayout } from './getDatabaseSchemaLayout'
+export { exportDatabaseSchemaToErwin } from './saveDatabaseSchema'
+// Файловые операции для схемы из сайдбара (НЕ сохраняет в БД)
+export { 
+  saveDatabaseSchemaToFile, 
+  getSavedSchemaFiles, 
+  loadSchemaFromFile,
+  deleteSchemaFile,
+  downloadSchemaFile,
+  getLatestSchemaFile,
+} from './saveDatabaseSchemaToFile'
