@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import NetworkCanvas from '@/app/(authenticated)/connections/NetworkCanvas'
 import GraphvizCanvas from '@/app/(authenticated)/connections/GraphvizCanvas'
-import { FiMap, FiList, FiFilter, FiLayers, FiArrowUp, FiArrowDown, FiGitBranch } from 'react-icons/fi'
+import { FiMap, FiList, FiArrowUp, FiArrowDown, FiGitBranch, FiSearch } from 'react-icons/fi'
 import { formatDate } from '@/lib/utils'
 
 interface ConnectionsListProps {
@@ -48,11 +50,12 @@ interface ConnectionsListProps {
 }
 
 export default function ConnectionsList({ networkData, connectionsData, initialFilterSystemId }: ConnectionsListProps) {
+  const router = useRouter()
   const [viewMode, setViewMode] = useState<'map' | 'list'>('list')
   const [schemaType, setSchemaType] = useState<'manual' | 'graphviz'>('manual')
-  const [showFilterMenu, setShowFilterMenu] = useState(false)
-  const [showGroupMenu, setShowGroupMenu] = useState(false)
-  const [showSortMenu, setShowSortMenu] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortColumn, setSortColumn] = useState<'streamId' | 'description' | 'source' | 'recipient' | 'createdAt'>('streamId')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const [isLoadingView, setIsLoadingView] = useState(true)
   const toolbarPortalRef = useRef<HTMLDivElement>(null)
 
@@ -80,6 +83,71 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
     }, 100)
     return () => clearTimeout(timer)
   }, [initialFilterSystemId])
+
+  // Фильтрация и сортировка данных
+  const filteredAndSortedData = useMemo(() => {
+    let result = [...connectionsData]
+
+    // Поиск
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      result = result.filter(connection => 
+        connection.streamId.toString().includes(query) ||
+        connection.description?.toLowerCase().includes(query) ||
+        connection.source.systemName?.toLowerCase().includes(query) ||
+        connection.source.versionCode?.toLowerCase().includes(query) ||
+        connection.recipient?.systemName?.toLowerCase().includes(query) ||
+        connection.recipient?.versionCode?.toLowerCase().includes(query)
+      )
+    }
+
+    // Сортировка
+    result.sort((a, b) => {
+      let comparison = 0
+      switch (sortColumn) {
+        case 'streamId':
+          comparison = a.streamId - b.streamId
+          break
+        case 'description':
+          comparison = (a.description || '').localeCompare(b.description || '')
+          break
+        case 'source':
+          comparison = (a.source.systemName || '').localeCompare(b.source.systemName || '')
+          break
+        case 'recipient':
+          comparison = (a.recipient?.systemName || '').localeCompare(b.recipient?.systemName || '')
+          break
+        case 'createdAt':
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          comparison = dateA - dateB
+          break
+      }
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+
+    return result
+  }, [connectionsData, searchQuery, sortColumn, sortDirection])
+
+  // Переключение сортировки
+  const handleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(column)
+      setSortDirection('asc')
+    }
+  }
+
+  // Иконка сортировки
+  const SortIcon = ({ column }: { column: typeof sortColumn }) => {
+    if (sortColumn !== column) {
+      return <FiArrowUp className="h-3 w-3 opacity-30" />
+    }
+    return sortDirection === 'asc' 
+      ? <FiArrowUp className="h-3 w-3" /> 
+      : <FiArrowDown className="h-3 w-3" />
+  }
 
   // Save view mode to localStorage when it changes
   const handleViewModeChange = (mode: 'map' | 'list') => {
@@ -135,147 +203,20 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
 
   return (
     <div className="space-y-4">
-      {/* Toolbar with filters, grouping, sorting and view toggle */}
+      {/* Toolbar with search and view toggle */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         {viewMode === 'list' ? (
           <div className="flex items-center gap-2">
-            {/* Filter button */}
+            {/* Search input */}
             <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowFilterMenu(!showFilterMenu)
-                  setShowGroupMenu(false)
-                  setShowSortMenu(false)
-                }}
-              >
-                <FiFilter className="h-4 w-4 mr-2" />
-                Фильтр
-              </Button>
-              {showFilterMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowFilterMenu(false)}
-                  />
-                  <div className="absolute left-0 mt-2 w-64 rounded-md shadow-lg z-20 bg-card border border-border">
-                    <div className="p-3">
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
-                          <input type="checkbox" className="w-4 h-4" />
-                          <span className="text-sm">С общей базой данных</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
-                          <input type="checkbox" className="w-4 h-4" />
-                          <span className="text-sm">Без общей базы данных</span>
-                        </label>
-                        <div className="border-t border-border pt-2 mt-2">
-                          <div className="text-xs text-muted-foreground mb-2 px-2">По источнику:</div>
-                          <label className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
-                            <input type="checkbox" className="w-4 h-4" />
-                            <span className="text-sm">Абитуриент</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
-                            <input type="checkbox" className="w-4 h-4" />
-                            <span className="text-sm">УПлан</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Group button */}
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowGroupMenu(!showGroupMenu)
-                  setShowFilterMenu(false)
-                  setShowSortMenu(false)
-                }}
-              >
-                <FiLayers className="h-4 w-4 mr-2" />
-                Группировка
-              </Button>
-              
-              {showGroupMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowGroupMenu(false)}
-                  />
-                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg z-20 bg-card border border-border">
-                    <div className="py-1">
-                      <button className="flex items-center w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        Без группировки
-                      </button>
-                      <button className="flex items-center w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        По источнику
-                      </button>
-                      <button className="flex items-center w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        По получателю
-                      </button>
-                      <button className="flex items-center w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        По дате создания
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Sort button */}
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowSortMenu(!showSortMenu)
-                  setShowFilterMenu(false)
-                  setShowGroupMenu(false)
-                }}
-              >
-                <FiArrowUp className="h-4 w-4 mr-2" />
-                Сортировка
-              </Button>
-              
-              {showSortMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowSortMenu(false)}
-                  />
-                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg z-20 bg-card border border-border">
-                    <div className="py-1">
-                      <button className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        <span>По ID</span>
-                        <FiArrowUp className="h-4 w-4" />
-                      </button>
-                      <button className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        <span>По описанию</span>
-                        <FiArrowUp className="h-4 w-4" />
-                      </button>
-                      <button className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        <span>По источнику</span>
-                        <FiArrowUp className="h-4 w-4" />
-                      </button>
-                      <button className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        <span>По получателю</span>
-                        <FiArrowUp className="h-4 w-4" />
-                      </button>
-                      <button className="flex items-center justify-between w-full px-4 py-2 text-sm hover:bg-accent transition-colors text-left">
-                        <span>По дате создания</span>
-                        <FiArrowDown className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Поиск по названию системы, описанию..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-80"
+              />
             </div>
           </div>
         ) : (
@@ -407,18 +348,62 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b-2 border-border">
-                    <th className="text-left p-3 font-medium">ID</th>
-                    <th className="text-left p-3 font-medium">Описание потока</th>
-                    <th className="text-left p-3 font-medium">Источник</th>
-                    <th className="text-left p-3 font-medium">Получатель</th>
+                    <th className="text-left p-3 font-medium">
+                      <button 
+                        onClick={() => handleSort('streamId')}
+                        className="flex items-center gap-1 hover:text-primary transition-colors"
+                      >
+                        ID
+                        <SortIcon column="streamId" />
+                      </button>
+                    </th>
+                    <th className="text-left p-3 font-medium">
+                      <button 
+                        onClick={() => handleSort('description')}
+                        className="flex items-center gap-1 hover:text-primary transition-colors"
+                      >
+                        Описание потока
+                        <SortIcon column="description" />
+                      </button>
+                    </th>
+                    <th className="text-left p-3 font-medium">
+                      <button 
+                        onClick={() => handleSort('source')}
+                        className="flex items-center gap-1 hover:text-primary transition-colors"
+                      >
+                        Источник
+                        <SortIcon column="source" />
+                      </button>
+                    </th>
+                    <th className="text-left p-3 font-medium">
+                      <button 
+                        onClick={() => handleSort('recipient')}
+                        className="flex items-center gap-1 hover:text-primary transition-colors"
+                      >
+                        Получатель
+                        <SortIcon column="recipient" />
+                      </button>
+                    </th>
                     <th className="text-left p-3 font-medium">Формат/Протокол</th>
                     <th className="text-center p-3 font-medium">Общая база</th>
-                    <th className="text-left p-3 font-medium">Дата создания</th>
+                    <th className="text-left p-3 font-medium">
+                      <button 
+                        onClick={() => handleSort('createdAt')}
+                        className="flex items-center gap-1 hover:text-primary transition-colors"
+                      >
+                        Дата создания
+                        <SortIcon column="createdAt" />
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {connectionsData.map((connection) => (
-                    <tr key={connection.id} className="border-b border-border hover:bg-accent transition-colors">
+                  {filteredAndSortedData.map((connection) => (
+                    <tr 
+                      key={connection.id} 
+                      onClick={() => router.push(`/connections/${connection.streamId}`)}
+                      className="border-b border-border hover:bg-accent transition-colors cursor-pointer"
+                    >
                       <td className="p-3">
                         <div className="font-mono text-sm">{connection.streamId}</div>
                       </td>
@@ -465,9 +450,9 @@ export default function ConnectionsList({ networkData, connectionsData, initialF
                 </tbody>
               </table>
               
-              {connectionsData.length === 0 && (
+              {filteredAndSortedData.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
-                  Потоки данных не найдены
+                  {searchQuery ? 'Ничего не найдено' : 'Потоки данных не найдены'}
                 </div>
               )}
             </div>

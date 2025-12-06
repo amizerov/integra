@@ -4,47 +4,97 @@ import { prisma } from '@/lib/db'
 
 /**
  * Получить топ систем по количеству связей (входящих + исходящих)
+ * Оптимизированная версия с использованием подсчёта на уровне БД
  */
 export async function getTopConnectedSystems(limit: number = 4) {
-  // Получаем все системы с их версиями и связями
-  const systems = await prisma.informationSystem.findMany({
-    include: {
-      versions: {
-        include: {
-          dataStreamsSource: true, // Исходящие потоки
-          dataStreamsRecipient: true, // Входящие потоки
+  // Получаем количество исходящих потоков для каждой системы
+  const outgoingCounts = await prisma.dataStream.groupBy({
+    by: ['versionId'],
+    _count: { streamId: true }
+  })
+
+  // Получаем количество входящих потоков для каждой системы  
+  const incomingCounts = await prisma.dataStream.groupBy({
+    by: ['recipientVersionId'],
+    where: { recipientVersionId: { not: null } },
+    _count: { streamId: true }
+  })
+
+  // Получаем все версии с их системами
+  const versions = await prisma.systemVersion.findMany({
+    select: {
+      versionId: true,
+      systemId: true,
+      system: {
+        select: {
+          systemId: true,
+          systemName: true,
+          systemShortName: true
         }
       }
     }
   })
-  
-  // Подсчитываем общее количество связей для каждой системы
-  const systemsWithConnections = systems.map(system => {
-    const outgoingCount = system.versions.reduce(
-      (sum: number, v: any) => sum + (v.dataStreamsSource?.length || 0), 
-      0
-    )
-    const incomingCount = system.versions.reduce(
-      (sum: number, v: any) => sum + (v.dataStreamsRecipient?.length || 0), 
-      0
-    )
-    const totalConnections = outgoingCount + incomingCount
-    
-    return {
-      systemId: system.systemId,
-      systemName: system.systemName || '',
-      systemShortName: system.systemShortName || '',
-      totalConnections,
-      outgoingCount,
-      incomingCount,
+
+  // Создаём карту версия -> система
+  const versionToSystem = new Map<number, { systemId: number; systemName: string; systemShortName: string }>()
+  versions.forEach(v => {
+    versionToSystem.set(v.versionId, {
+      systemId: v.system.systemId,
+      systemName: v.system.systemName || '',
+      systemShortName: v.system.systemShortName || ''
+    })
+  })
+
+  // Агрегируем по системам
+  const systemConnections = new Map<number, { 
+    systemId: number
+    systemName: string
+    systemShortName: string
+    outgoingCount: number
+    incomingCount: number 
+  }>()
+
+  // Добавляем исходящие
+  outgoingCounts.forEach(oc => {
+    const system = versionToSystem.get(oc.versionId)
+    if (system) {
+      const existing = systemConnections.get(system.systemId) || {
+        ...system,
+        outgoingCount: 0,
+        incomingCount: 0
+      }
+      existing.outgoingCount += oc._count.streamId
+      systemConnections.set(system.systemId, existing)
     }
   })
-  
-  // Сортируем по количеству связей и берем топ
-  return systemsWithConnections
+
+  // Добавляем входящие
+  incomingCounts.forEach(ic => {
+    if (ic.recipientVersionId) {
+      const system = versionToSystem.get(ic.recipientVersionId)
+      if (system) {
+        const existing = systemConnections.get(system.systemId) || {
+          ...system,
+          outgoingCount: 0,
+          incomingCount: 0
+        }
+        existing.incomingCount += ic._count.streamId
+        systemConnections.set(system.systemId, existing)
+      }
+    }
+  })
+
+  // Преобразуем в массив и сортируем
+  const result = Array.from(systemConnections.values())
+    .map(s => ({
+      ...s,
+      totalConnections: s.outgoingCount + s.incomingCount
+    }))
     .filter(s => s.totalConnections > 0)
     .sort((a, b) => b.totalConnections - a.totalConnections)
     .slice(0, limit)
+
+  return result
 }
 
 export async function getSystems() {

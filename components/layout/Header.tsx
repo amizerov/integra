@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { FiSun, FiMoon, FiBell, FiUser, FiLogOut, FiSettings, FiMenu } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -16,7 +16,26 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { data: session } = useSession()
   const { theme, toggleTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const pathname = usePathname() || ''
+
+  // Загружаем актуальный аватар из профиля
+  useEffect(() => {
+    if (session?.user) {
+      // Сначала используем аватар из сессии
+      setAvatarUrl((session.user as any).avatarUrl || null)
+      
+      // Затем загружаем актуальный из API
+      fetch('/api/user/avatar')
+        .then(res => res.json())
+        .then(data => {
+          if (data.avatarUrl) {
+            setAvatarUrl(data.avatarUrl)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [session, pathname])
 
   // Basic mapping of route -> title + description. Extend as needed.
   const route = pathname.split('?')[0]
@@ -94,10 +113,18 @@ export function Header({ onMenuClick }: HeaderProps) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center space-x-3 rounded-full hover:bg-accent px-2 md:px-3 py-1.5 transition-colors cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                <span className="text-primary-foreground text-sm font-medium">
-                  {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || 'U'}
-                </span>
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 overflow-hidden">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt="Avatar" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-primary-foreground text-sm font-medium">
+                    {session?.user?.name?.charAt(0) || session?.user?.email?.charAt(0) || 'U'}
+                  </span>
+                )}
               </div>
               <div className="hidden md:block text-left">
                 <div className="text-sm font-medium">

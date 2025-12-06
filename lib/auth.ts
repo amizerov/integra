@@ -10,6 +10,7 @@ declare module "next-auth" {
       id: number
       userLevel: number
       fio: string
+      avatarUrl: string | null
     } & DefaultSession["user"]
   }
   
@@ -17,6 +18,7 @@ declare module "next-auth" {
     id: number
     userLevel: number
     fio: string
+    avatarUrl: string | null
   }
 }
 
@@ -70,6 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.fio || '',
           userLevel: user.userLevel || 0,
           fio: user.fio || '',
+          avatarUrl: user.avatarUrl || null,
         }
       },
     }),
@@ -80,6 +83,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id
         token.userLevel = (user as any).userLevel
         token.fio = (user as any).fio
+        token.avatarUrl = (user as any).avatarUrl
       }
       return token
     },
@@ -88,6 +92,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         (session.user as any).id = token.id as number;
         (session.user as any).userLevel = token.userLevel as number;
         (session.user as any).fio = token.fio as string;
+        (session.user as any).avatarUrl = token.avatarUrl as string | null;
       }
       return session
     },

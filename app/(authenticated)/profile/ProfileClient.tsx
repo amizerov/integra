@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,32 +15,37 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import toast from 'react-hot-toast'
-import { FiUser, FiMail, FiPhone, FiLock, FiEdit2, FiSave, FiX, FiEye, FiEyeOff, FiCamera } from 'react-icons/fi'
-import { updateUserProfile, changePassword } from './actions'
+import { FiUser, FiMail, FiPhone, FiLock, FiEdit2, FiSave, FiX, FiEye, FiEyeOff, FiCamera, FiCheck, FiAlertCircle, FiTrash2 } from 'react-icons/fi'
+import { updateUserProfile, changePassword, updateAvatar, removeAvatar, sendVerificationEmail } from './actions'
 
 interface ProfileClientProps {
   user: {
-    id: string
+    id: string | number
     fio?: string | null
     name?: string | null
-    email?: string | null
     eMail?: string | null
     phoneNumber?: string | null
     userLevel?: number | null
     userLogin?: string | null
+    avatarUrl?: string | null
+    emailVerified?: boolean | null
   }
 }
 
 export function ProfileClient({ user }: ProfileClientProps) {
+  const searchParams = useSearchParams()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+  const [sendingVerification, setSendingVerification] = useState(false)
+  const [sessionTime, setSessionTime] = useState<string>('')
 
   // Form state
   const [fio, setFio] = useState(user.fio || user.name || '')
-  const [email, setEmail] = useState(user.eMail || user.email || '')
+  const [email, setEmail] = useState(user.eMail || '')
   const [phone, setPhone] = useState(user.phoneNumber || '')
+  const [emailVerified, setEmailVerified] = useState(user.emailVerified || false)
 
   // Password form state
   const [currentPassword, setCurrentPassword] = useState('')
@@ -50,7 +56,28 @@ export function ProfileClient({ user }: ProfileClientProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Avatar state
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatarUrl || null)
+  const [savingAvatar, setSavingAvatar] = useState(false)
+
+  // Проверяем URL параметры для уведомлений
+  useEffect(() => {
+    const verified = searchParams.get('verified')
+    const error = searchParams.get('error')
+
+    if (verified === 'true') {
+      toast.success('Email успешно подтверждён!')
+      setEmailVerified(true)
+      window.history.replaceState({}, '', '/profile')
+    } else if (error) {
+      toast.error(decodeURIComponent(error))
+      window.history.replaceState({}, '', '/profile')
+    }
+  }, [searchParams])
+
+  // Устанавливаем время сессии только на клиенте
+  useEffect(() => {
+    setSessionTime(new Date().toLocaleString('ru-RU'))
+  }, [])
 
   const handleSave = async () => {
     if (!fio.trim()) {
@@ -72,12 +99,18 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
     setSaving(true)
     try {
-      await updateUserProfile({
+      const result = await updateUserProfile({
         fio: fio.trim(),
         eMail: email.trim(),
         phoneNumber: phone.trim() || undefined
       })
-      toast.success('Профиль успешно обновлён')
+      
+      if (result.emailChanged) {
+        setEmailVerified(false)
+        toast.success('Профиль обновлён. Email изменён — требуется подтверждение.')
+      } else {
+        toast.success('Профиль успешно обновлён')
+      }
       setIsEditing(false)
     } catch (error: any) {
       toast.error(error.message || 'Ошибка сохранения')
@@ -88,7 +121,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
   const handleCancel = () => {
     setFio(user.fio || user.name || '')
-    setEmail(user.eMail || user.email || '')
+    setEmail(user.eMail || '')
     setPhone(user.phoneNumber || '')
     setIsEditing(false)
   }
@@ -132,20 +165,65 @@ export function ProfileClient({ user }: ProfileClientProps) {
     }
   }
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('Размер файла не должен превышать 2MB')
-        return
+    if (!file) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Размер файла не должен превышать 2MB')
+      return
+    }
+
+    // Проверяем тип файла
+    if (!file.type.startsWith('image/')) {
+      toast.error('Выберите изображение')
+      return
+    }
+
+    setSavingAvatar(true)
+    
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      const base64 = reader.result as string
+      try {
+        await updateAvatar(base64)
+        setAvatarUrl(base64)
+        toast.success('Аватар успешно обновлён')
+      } catch (error: any) {
+        toast.error(error.message || 'Ошибка сохранения аватара')
+      } finally {
+        setSavingAvatar(false)
       }
-      
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string)
-        toast.success('Аватар обновлён (локально)')
-      }
-      reader.readAsDataURL(file)
+    }
+    reader.onerror = () => {
+      toast.error('Ошибка чтения файла')
+      setSavingAvatar(false)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveAvatar = async () => {
+    setSavingAvatar(true)
+    try {
+      await removeAvatar()
+      setAvatarUrl(null)
+      toast.success('Аватар удалён')
+    } catch (error: any) {
+      toast.error(error.message || 'Ошибка удаления аватара')
+    } finally {
+      setSavingAvatar(false)
+    }
+  }
+
+  const handleSendVerification = async () => {
+    setSendingVerification(true)
+    try {
+      await sendVerificationEmail()
+      toast.success('Письмо отправлено на ' + email)
+    } catch (error: any) {
+      toast.error(error.message || 'Ошибка отправки письма')
+    } finally {
+      setSendingVerification(false)
     }
   }
 
@@ -197,22 +275,50 @@ export function ProfileClient({ user }: ProfileClientProps) {
                     {getInitials()}
                   </span>
                 )}
+                {savingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
-              {isEditing && (
-                <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-secondary border-2 border-background flex items-center justify-center cursor-pointer hover:bg-secondary/80 transition-colors">
+              <div className="absolute -bottom-1 -right-1 flex gap-1">
+                <label className="w-8 h-8 rounded-full bg-secondary border-2 border-background flex items-center justify-center cursor-pointer hover:bg-secondary/80 transition-colors">
                   <FiCamera className="h-4 w-4" />
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={handleAvatarChange}
+                    disabled={savingAvatar}
                   />
                 </label>
-              )}
+                {avatarUrl && (
+                  <button
+                    onClick={handleRemoveAvatar}
+                    disabled={savingAvatar}
+                    className="w-8 h-8 rounded-full bg-destructive border-2 border-background flex items-center justify-center cursor-pointer hover:bg-destructive/80 transition-colors"
+                  >
+                    <FiTrash2 className="h-4 w-4 text-white" />
+                  </button>
+                )}
+              </div>
             </div>
             <div>
               <h3 className="text-xl font-semibold">{fio || user.name || 'Не указано'}</h3>
-              <p className="text-muted-foreground">{email}</p>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span>{email}</span>
+                {emailVerified ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                    <FiCheck className="h-3 w-3" />
+                    подтверждён
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                    <FiAlertCircle className="h-3 w-3" />
+                    не подтверждён
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
                 {user.userLevel === 0 ? 'Администратор' : 'Пользователь'}
               </p>
@@ -239,6 +345,17 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <Label htmlFor="email" className="flex items-center gap-2">
                 <FiMail className="h-4 w-4" />
                 Email
+                {!emailVerified && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={handleSendVerification}
+                    disabled={sendingVerification || isEditing}
+                  >
+                    {sendingVerification ? 'Отправка...' : 'Подтвердить'}
+                  </Button>
+                )}
               </Label>
               <Input
                 id="email"
@@ -279,7 +396,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <Label htmlFor="userLogin">Логин</Label>
               <Input
                 id="userLogin"
-                value={user.userLogin || user.eMail || user.email || '—'}
+                value={user.userLogin || user.eMail || '—'}
                 disabled
               />
             </div>
@@ -349,7 +466,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <div>
                 <p className="font-medium">Текущая сессия</p>
                 <p className="text-sm text-muted-foreground">
-                  Вход выполнен: {new Date().toLocaleString('ru-RU')}
+                  Вход выполнен: {sessionTime || '—'}
                 </p>
               </div>
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">

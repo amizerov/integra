@@ -4,18 +4,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Добавляем параметры connection pool в DATABASE_URL или через конфигурацию
+const getDatabaseUrl = () => {
+  const baseUrl = process.env.DATABASE_URL || ''
+  // Добавляем параметры пула если их нет
+  if (baseUrl && !baseUrl.includes('connection_limit')) {
+    const separator = baseUrl.includes('?') ? '&' : '?'
+    return `${baseUrl}${separator}connection_limit=5&pool_timeout=30`
+  }
+  return baseUrl
+}
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: getDatabaseUrl(),
     },
   },
-})
-
-// Ensure connection is established on init (helps detect issues early)
-prisma.$connect().catch((e) => {
-  console.error('Failed to connect to database:', e)
 })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
