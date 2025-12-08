@@ -62,6 +62,7 @@ export async function getSystemsNetworkData() {
       systemName: version.system.systemName,
       systemShortName: version.system.systemShortName,
       versionCode: version.versionCode,
+      developingOrganization: version.developingOrganization,
     }))
 
     // Формируем связи (edges) - потоки данных

@@ -18,6 +18,7 @@ interface NetworkNode {
   systemName: string | null
   systemShortName: string | null
   versionCode: string | null
+  developingOrganization?: string | null
   x: number
   y: number
   width: number
@@ -40,6 +41,34 @@ interface ConnectionPoint {
   handle: 'top' | 'right' | 'bottom' | 'left'
 }
 
+// Категория разработчика: 1 - МГУ НИВЦ, 2 - МГУ не НИВЦ, 3 - не МГУ
+type DeveloperCategory = 1 | 2 | 3
+
+function getDeveloperCategory(developingOrganization: string | null | undefined): DeveloperCategory {
+  if (!developingOrganization) return 3 // Не указано - по умолчанию "не МГУ"
+  
+  const org = developingOrganization.toLowerCase()
+  
+  // Проверяем на НИВЦ МГУ
+  if (org.includes('нивц') || org.includes('nivc')) {
+    return 1 // МГУ НИВЦ
+  }
+  
+  // Проверяем на МГУ (но не НИВЦ)
+  if (org.includes('мгу') || org.includes('msu') || org.includes('московский государственный университет') || org.includes('ломоносов')) {
+    return 2 // МГУ не НИВЦ
+  }
+  
+  return 3 // Не МГУ
+}
+
+// Цвета для категорий разработчиков
+const DEVELOPER_COLORS = {
+  1: { fill: '#dbeafe', stroke: '#3b82f6', text: '#1e40af' }, // МГУ НИВЦ - синий
+  2: { fill: '#dcfce7', stroke: '#22c55e', text: '#166534' }, // МГУ не НИВЦ - зелёный  
+  3: { fill: '#fef3c7', stroke: '#f59e0b', text: '#92400e' }, // Не МГУ - оранжевый
+}
+
 interface NetworkCanvasProps {
   initialNodes: Array<{
     id: string
@@ -49,6 +78,7 @@ interface NetworkCanvasProps {
     systemName: string | null
     systemShortName: string | null
     versionCode: string | null
+    developingOrganization?: string | null
   }>
   initialEdges: Array<{
     id: string
@@ -829,6 +859,25 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
           </div>
         </div>
 
+        {/* Легенда цветов */}
+        <div className="absolute bottom-4 left-4 z-10 bg-card/90 backdrop-blur-sm p-3 rounded-md border border-border">
+          <div className="text-xs font-medium mb-2">Разработчик:</div>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: DEVELOPER_COLORS[1].fill, border: `2px solid ${DEVELOPER_COLORS[1].stroke}` }} />
+              <span className="text-xs">МГУ НИВЦ</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: DEVELOPER_COLORS[2].fill, border: `2px solid ${DEVELOPER_COLORS[2].stroke}` }} />
+              <span className="text-xs">МГУ (не НИВЦ)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: DEVELOPER_COLORS[3].fill, border: `2px solid ${DEVELOPER_COLORS[3].stroke}` }} />
+              <span className="text-xs">Внешний разработчик</span>
+            </div>
+          </div>
+        </div>
+
         {/* SVG Canvas */}
         <svg
           ref={svgRef}
@@ -976,51 +1025,45 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
             })}
 
             {/* Рисуем nodes */}
-            {nodes.map(node => (
-              <g
-                key={node.id}
-                onMouseDown={(e) => handleMouseDown(e, node.id)}
-                className="cursor-move"
-              >
-                {/* Node rectangle */}
-                <rect
-                  x={node.x}
-                  y={node.y}
-                  width={node.width}
-                  height={node.height}
-                  rx="8"
-                  fill="var(--color-card)"
-                  stroke="var(--color-primary)"
-                  strokeWidth="2"
-                  filter="url(#nodeShadow)"
-                />
-                
-                {/* Background for text to prevent overlap */}
-                <rect
-                  x={node.x + 5}
-                  y={node.y + node.height / 2 - 25}
-                  width={node.width - 10}
-                  height={40}
-                  fill="var(--color-card)"
-                  opacity="0.95"
-                  rx="4"
-                />
-                
-                {/* Node text */}
-                <text
-                  x={node.x + node.width / 2}
-                  y={node.y + node.height / 2}
-                  fontSize="16"
-                  fontWeight="600"
-                  fill="var(--color-foreground)"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="pointer-events-none select-none"
+            {nodes.map(node => {
+              const devCategory = getDeveloperCategory(node.developingOrganization)
+              const colors = DEVELOPER_COLORS[devCategory]
+              
+              return (
+                <g
+                  key={node.id}
+                  onMouseDown={(e) => handleMouseDown(e, node.id)}
+                  className="cursor-move"
                 >
-                  {node.systemShortName || node.systemName || `Система ${node.systemId}`}
-                </text>
-              </g>
-            ))}
+                  {/* Node rectangle */}
+                  <rect
+                    x={node.x}
+                    y={node.y}
+                    width={node.width}
+                    height={node.height}
+                    rx="8"
+                    fill={colors.fill}
+                    stroke={colors.stroke}
+                    strokeWidth="2"
+                    filter="url(#nodeShadow)"
+                  />
+                  
+                  {/* Node text */}
+                  <text
+                    x={node.x + node.width / 2}
+                    y={node.y + node.height / 2}
+                    fontSize="16"
+                    fontWeight="600"
+                    fill={colors.text}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="pointer-events-none select-none"
+                  >
+                    {node.systemShortName || node.systemName || `Система ${node.systemId}`}
+                  </text>
+                </g>
+              )
+            })}
             
             {/* Выбранное ребро - рисуем поверх всего с ярким label */}
             {selectedEdgeId && (() => {
