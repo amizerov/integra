@@ -14,6 +14,10 @@ export async function getDashboardStats() {
     totalSchemas,
     recentSystemsData,
     topConnectedSystems,
+    // Статистика по ОС
+    versionsWithOs,
+    // Статистика по СУБД
+    versionsWithDbms,
   ] = await Promise.all([
     prisma.informationSystem.count(),
     prisma.informationSystem.count({
@@ -40,7 +44,47 @@ export async function getDashboardStats() {
     }),
     // Получаем топ систем по количеству связей
     getTopConnectedSystems(10),
+    // Получаем версии с ОС для подсчёта статистики
+    prisma.systemVersion.findMany({
+      where: { opersysId: { not: null } },
+      select: {
+        opersysId: true,
+        operatingSystem: {
+          select: { osName: true }
+        }
+      }
+    }),
+    // Получаем версии с СУБД для подсчёта статистики
+    prisma.systemVersion.findMany({
+      where: { dbmsId: { not: null } },
+      select: {
+        dbmsId: true,
+        dbms: {
+          select: { dbmsName: true }
+        }
+      }
+    }),
   ])
+
+  // Агрегируем статистику по ОС
+  const osStats = new Map<string, number>()
+  versionsWithOs.forEach(v => {
+    const osName = v.operatingSystem?.osName || 'Неизвестно'
+    osStats.set(osName, (osStats.get(osName) || 0) + 1)
+  })
+  const systemsByPlatform = Array.from(osStats.entries())
+    .map(([platform, count]) => ({ platform, count }))
+    .sort((a, b) => b.count - a.count)
+
+  // Агрегируем статистику по СУБД
+  const dbmsStats = new Map<string, number>()
+  versionsWithDbms.forEach(v => {
+    const dbmsName = v.dbms?.dbmsName || 'Неизвестно'
+    dbmsStats.set(dbmsName, (dbmsStats.get(dbmsName) || 0) + 1)
+  })
+  const systemsByDatabase = Array.from(dbmsStats.entries())
+    .map(([database, count]) => ({ database, count }))
+    .sort((a, b) => b.count - a.count)
 
   // Сортируем системы по дате изменения их последней версии и берем топ-5
   const sortedSystems = recentSystemsData
@@ -62,8 +106,8 @@ export async function getDashboardStats() {
     totalManagingDocuments,
     totalUserGuides,
     totalSchemas,
-    systemsByPlatform: [],
-    systemsByDatabase: [],
+    systemsByPlatform,
+    systemsByDatabase,
     topConnectedSystems,
     recentSystems: sortedSystems.map((s: any) => {
       const latestVersion = s.versions[0] // Самая последняя версия по дате изменения

@@ -148,30 +148,36 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Распределение по платформам</CardTitle>
             <CardDescription>
-              Количество версий систем по типам платформ
+              Операционные системы, на которых работают версии АИС
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {stats.systemsByPlatform.map((item: any) => {
-                const maxCount = Math.max(...stats.systemsByPlatform.map((i: any) => i.count))
-                const percentage = (item.count / maxCount) * 100
-                return (
-                  <div key={item.platform} className="flex items-center">
-                    <div className="w-32 text-sm font-medium">{item.platform}</div>
-                    <div className="flex-1 bg-secondary rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${percentage}%` }} 
-                      />
+            {stats.systemsByPlatform.length > 0 ? (
+              <div className="space-y-3">
+                {stats.systemsByPlatform.map((item: any) => {
+                  const maxCount = Math.max(...stats.systemsByPlatform.map((i: any) => i.count))
+                  const percentage = (item.count / maxCount) * 100
+                  return (
+                    <div key={item.platform} className="flex items-center">
+                      <div className="w-40 text-sm font-medium truncate" title={item.platform}>{item.platform}</div>
+                      <div className="flex-1 bg-secondary rounded-full h-2 mx-3">
+                        <div 
+                          className="bg-primary h-2 rounded-full" 
+                          style={{ width: `${percentage}%` }} 
+                        />
+                      </div>
+                      <div className="w-10 text-right text-sm text-muted-foreground">
+                        {item.count}
+                      </div>
                     </div>
-                    <div className="w-12 text-right text-sm text-muted-foreground">
-                      {item.count}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Нет данных об операционных системах
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -179,30 +185,36 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle>Типы баз данных</CardTitle>
             <CardDescription>
-              Используемые СУБД в системах
+              СУБД, используемые в версиях АИС
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {stats.systemsByDatabase.map((item: any) => {
-                const maxCount = Math.max(...stats.systemsByDatabase.map((i: any) => i.count))
-                const percentage = (item.count / maxCount) * 100
-                return (
-                  <div key={item.database} className="flex items-center">
-                    <div className="w-32 text-sm font-medium">{item.database}</div>
-                    <div className="flex-1 bg-secondary rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${percentage}%` }} 
-                      />
+            {stats.systemsByDatabase.length > 0 ? (
+              <div className="space-y-3">
+                {stats.systemsByDatabase.map((item: any) => {
+                  const maxCount = Math.max(...stats.systemsByDatabase.map((i: any) => i.count))
+                  const percentage = (item.count / maxCount) * 100
+                  return (
+                    <div key={item.database} className="flex items-center">
+                      <div className="w-40 text-sm font-medium truncate" title={item.database}>{item.database}</div>
+                      <div className="flex-1 bg-secondary rounded-full h-2 mx-3">
+                        <div 
+                          className="bg-primary h-2 rounded-full" 
+                          style={{ width: `${percentage}%` }} 
+                        />
+                      </div>
+                      <div className="w-10 text-right text-sm text-muted-foreground">
+                        {item.count}
+                      </div>
                     </div>
-                    <div className="w-12 text-right text-sm text-muted-foreground">
-                      {item.count}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Нет данных о СУБД
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

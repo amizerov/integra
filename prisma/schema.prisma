@@ -75,9 +75,13 @@ model SystemVersion {
   creationDate           DateTime?         @map("creation_date") @db.Timestamp(6)
   lastChangeUser         Int?              @map("last_change_user")
   lastChangeDate         DateTime?         @map("last_change_date") @db.Timestamp(6)
+  opersysId              Int?              @map("opersys_id")
+  dbmsId                 Int?              @map("dbms_id")
   system                 InformationSystem @relation(fields: [systemId], references: [systemId], onDelete: NoAction, onUpdate: NoAction, map: "r_1")
   creator                AllowedUser?      @relation("VersionCreator", fields: [userId], references: [userId], onDelete: NoAction, onUpdate: NoAction, map: "r_28")
   modifier               AllowedUser?      @relation("VersionModifier", fields: [lastChangeUser], references: [userId], onDelete: NoAction, onUpdate: NoAction)
+  operatingSystem        OperatingSystem?  @relation(fields: [opersysId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dbms                   Dbms?             @relation(fields: [dbmsId], references: [dbmsId], onDelete: NoAction, onUpdate: NoAction)
   userGuides             UserGuide?
   dataStreamsSource      DataStream[]      @relation("SourceVersion")
   dataStreamsRecipient   DataStream[]      @relation("RecipientVersion")
@@ -120,26 +124,28 @@ model DocumentKind {
 }
 
 model Dbms {
-  dbmsId          Int     @id(map: "ref_dbms_pkey") @default(autoincrement()) @map("dbms_id")
-  dbmsName        String  @unique(map: "ref_dbms_dbms_name_key") @map("dbms_name") @db.VarChar(100)
-  dbmsDescription String? @map("dbms_description")
+  dbmsId          Int             @id(map: "ref_dbms_pkey") @default(autoincrement()) @map("dbms_id")
+  dbmsName        String          @unique(map: "ref_dbms_dbms_name_key") @map("dbms_name") @db.VarChar(100)
+  dbmsDescription String?         @map("dbms_description")
+  versions        SystemVersion[]
 
   @@map("c2_dbms")
 }
 
 model OperatingSystem {
-  id           Int       @id @default(autoincrement())
-  osName       String    @unique(map: "c3_opersys_name_key") @map("os_name") @db.VarChar(100)
-  vendor       String?   @db.VarChar(100)
-  osVersion    String?   @map("os_version") @db.VarChar(50)
-  architecture String?   @db.VarChar(20)
-  osType       String?   @map("os_type") @db.VarChar(50)
-  isServer     Boolean?  @default(false) @map("is_server")
-  isSupported  Boolean?  @default(true) @map("is_supported")
-  endOfSupport DateTime? @map("end_of_support") @db.Date
+  id           Int             @id @default(autoincrement())
+  osName       String          @unique(map: "c3_opersys_name_key") @map("os_name") @db.VarChar(100)
+  vendor       String?         @db.VarChar(100)
+  osVersion    String?         @map("os_version") @db.VarChar(50)
+  architecture String?         @db.VarChar(20)
+  osType       String?         @map("os_type") @db.VarChar(50)
+  isServer     Boolean?        @default(false) @map("is_server")
+  isSupported  Boolean?        @default(true) @map("is_supported")
+  endOfSupport DateTime?       @map("end_of_support") @db.Date
   description  String?
-  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+  createdAt    DateTime?       @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime?       @default(now()) @map("updated_at") @db.Timestamp(6)
+  versions     SystemVersion[]
 
   @@index([isSupported], map: "idx_c3_opersys_is_supported")
   @@index([osName], map: "idx_c3_opersys_name")
