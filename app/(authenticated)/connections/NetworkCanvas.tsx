@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiDownload, FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiFolder, FiEdit2, FiTrash2 } from 'react-icons/fi'
 import { saveNetworkLayout, getAllNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
 import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/app/(authenticated)/connections/actions/graph-layout'
 
@@ -748,7 +748,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
               <FiSave className="h-4 w-4" />
             </Button>
             <Button size="sm" variant="outline" onClick={handleOpenLoadDialog} title="Загрузить схему">
-              <FiDownload className="h-4 w-4" />
+              <FiFolder className="h-4 w-4" />
             </Button>
           </div>
         )}
@@ -842,7 +842,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
           ),
           loadButton: (
             <Button size="sm" variant="outline" onClick={handleOpenLoadDialog} title="Загрузить схему">
-              <FiDownload className="h-4 w-4" />
+              <FiFolder className="h-4 w-4" />
             </Button>
           ),
         })}
