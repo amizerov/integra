@@ -18,7 +18,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }))
 
   return (
-    <SessionProvider>
+    <SessionProvider 
+      refetchInterval={5 * 60} // Проверять сессию каждые 5 минут
+      refetchOnWindowFocus={true} // Проверять при возврате на вкладку
+    >
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <ConfirmProvider>

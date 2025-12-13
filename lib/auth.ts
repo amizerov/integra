@@ -28,7 +28,13 @@ const loginSchema = z.object({
 })
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
+  session: { 
+    strategy: "jwt",
+    maxAge: 60 * 60, // 1 час - время жизни сессии
+  },
+  jwt: {
+    maxAge: 60 * 60, // 1 час - время жизни JWT токена
+  },
   pages: {
     signIn: "/login",
     error: "/login",

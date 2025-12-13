@@ -13,29 +13,79 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const { theme, toggleTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const pathname = usePathname() || ''
 
+  // Автоматический выход при истечении сессии
+  useEffect(() => {
+    // Выходим только если сессия загрузилась и пользователь не авторизован
+    if (status === 'unauthenticated') {
+      signOut({ callbackUrl: '/login' })
+    }
+  }, [status])
+
+  // Отслеживание активности пользователя для автовыхода при бездействии
+  useEffect(() => {
+    // Запускаем таймер только для авторизованных пользователей
+    if (status !== 'authenticated') return
+
+    let inactivityTimer: NodeJS.Timeout
+    const INACTIVITY_TIMEOUT = 60 * 60 * 1000 // 1 час в миллисекундах
+
+    const resetTimer = () => {
+      clearTimeout(inactivityTimer)
+      inactivityTimer = setTimeout(() => {
+        // Время бездействия истекло - выходим
+        signOut({ callbackUrl: '/login' })
+      }, INACTIVITY_TIMEOUT)
+    }
+
+    // События активности пользователя
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click']
+    
+    // Устанавливаем обработчики
+    events.forEach(event => {
+      document.addEventListener(event, resetTimer, { passive: true })
+    })
+
+    // Запускаем таймер
+    resetTimer()
+
+    return () => {
+      clearTimeout(inactivityTimer)
+      events.forEach(event => {
+        document.removeEventListener(event, resetTimer)
+      })
+    }
+  }, [status])
+
   // Загружаем актуальный аватар из профиля
   useEffect(() => {
-    if (session?.user) {
+    if (status === 'authenticated' && session?.user) {
       // Сначала используем аватар из сессии
       setAvatarUrl((session.user as any).avatarUrl || null)
       
       // Затем загружаем актуальный из API
       fetch('/api/user/avatar')
-        .then(res => res.json())
+        .then(res => {
+          if (res.status === 401) {
+            // Сессия истекла на сервере
+            signOut({ callbackUrl: '/login' })
+            return null
+          }
+          return res.json()
+        })
         .then(data => {
-          if (data.avatarUrl) {
+          if (data?.avatarUrl) {
             setAvatarUrl(data.avatarUrl)
           }
         })
         .catch(() => {})
     }
-  }, [session, pathname])
+  }, [status, session, pathname])
 
   // Basic mapping of route -> title + description. Extend as needed.
   const route = pathname.split('?')[0]

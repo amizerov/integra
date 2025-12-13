@@ -2,17 +2,30 @@ import { auth } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-export default async function proxy(request: NextRequest) {
+// Публичные пути, доступные без авторизации
+const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
+
+function isPublicPath(pathname: string): boolean {
+  return publicPaths.some(path => pathname.startsWith(path))
+}
+
+export async function proxy(request: NextRequest) {
   const session = await auth()
+  const pathname = request.nextUrl.pathname
+  
+  // Проверяем валидность сессии (должен быть user с id)
+  const isValidSession = session?.user && (session.user as any).id
   
   // Если пользователь не авторизован и пытается попасть на защищенную страницу
-  if (!session?.user && !request.nextUrl.pathname.startsWith('/login')) {
+  if (!isValidSession && !isPublicPath(pathname)) {
     const loginUrl = new URL('/login', request.url)
+    // Сохраняем URL для редиректа после логина
+    loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }
   
-  // Если авторизован и пытается попасть на /login - редирект на главную
-  if (session?.user && request.nextUrl.pathname === '/login') {
+  // Если авторизован и пытается попасть на публичную страницу авторизации
+  if (isValidSession && isPublicPath(pathname)) {
     const dashboardUrl = new URL('/dashboard', request.url)
     return NextResponse.redirect(dashboardUrl)
   }
