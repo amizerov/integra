@@ -4,6 +4,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { getAllDocuments } from './actions/getAllDocuments'
 import { FiFile, FiDownload } from 'react-icons/fi'
 
+// Обновлять каждые 30 минут
+export const revalidate = 1800
+
 export default async function DocumentsPage() {
   const result = await getAllDocuments()
 

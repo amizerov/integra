@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { logSystemChange } from '@/lib/changeLogHelpers'
 
 /**
  * Получить топ систем по количеству связей (входящих + исходящих)
@@ -154,6 +155,14 @@ export async function createSystem(data: {
       }
     })
 
+    // Логируем создание системы
+    await logSystemChange(
+      system.systemId,
+      'created',
+      system.systemShortName || 'Новая система',
+      { systemName: system.systemName }
+    )
+
     revalidatePath('/systems')
 
     return { success: true, systemId: system.systemId }
@@ -185,6 +194,20 @@ export async function deleteSystem(systemId: number) {
     }
 
     await prisma.informationSystem.delete({ where: { systemId } })
+
+    // Логируем удаление системы
+    const system = await prisma.informationSystem.findUnique({
+      where: { systemId },
+      select: { systemShortName: true, systemName: true }
+    })
+    if (system) {
+      await logSystemChange(
+        systemId,
+        'deleted',
+        system.systemShortName || 'Система',
+        { systemName: system.systemName }
+      )
+    }
 
     revalidatePath('/systems')
     revalidatePath(`/systems/${systemId}`)

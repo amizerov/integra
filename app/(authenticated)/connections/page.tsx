@@ -2,6 +2,9 @@ import { getSystemsNetworkData, getConnectionsTableData } from './actions'
 import ConnectionsList from './ConnectionsList'
 import DatabaseErrorScreen from '@/components/DatabaseErrorScreen'
 
+// Кэшировать на 1 час - связи редко меняются, но долго грузятся
+export const revalidate = 3600
+
 export default async function ConnectionsPage({
   searchParams,
 }: {

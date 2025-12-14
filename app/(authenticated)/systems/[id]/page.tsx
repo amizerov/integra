@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth'
 import { getSystemById } from '../actions/getSystemById'
 import SystemDetailView from './SystemDetailView'
 
+// Обновлять каждые 5 минут
+export const revalidate = 300
+
 interface PageProps {
   params: Promise<{ id: string }>
 }

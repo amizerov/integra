@@ -35,6 +35,8 @@ model AllowedUser {
   intgr_2_2_data_streams       DataStream[]
   intgr_2_3_schemas            Schema[]
   networkLayouts               NetworkLayout[]
+  changeLogs                   ChangeLog[]
+  changeLogViews               ChangeLogView[]
 
   @@map("allowed_users")
 }
@@ -262,4 +264,30 @@ model NetworkLayout {
   user        AllowedUser @relation(fields: [userId], references: [userId])
 
   @@map("network_layouts")
+}
+
+model ChangeLog {
+  id          Int         @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  entityType  String      @map("entity_type") @db.VarChar(50) // 'system', 'version', 'stream', 'document', etc.
+  entityId    Int         @map("entity_id")
+  action      String      @db.VarChar(50) // 'created', 'updated', 'deleted'
+  description String      @db.VarChar(500)
+  metadata    String?     // JSON с дополнительными данными
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(6)
+  user        AllowedUser @relation(fields: [userId], references: [userId])
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@map("change_logs")
+}
+
+model ChangeLogView {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  lastViewedAt DateTime @map("last_viewed_at") @db.Timestamp(6)
+  user        AllowedUser @relation(fields: [userId], references: [userId])
+
+  @@unique([userId])
+  @@map("change_log_views")
 }

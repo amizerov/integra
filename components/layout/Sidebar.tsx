@@ -12,7 +12,8 @@ import {
   FiUsers,
   FiList,
   FiX,
-  FiDatabase
+  FiDatabase,
+  FiClock
 } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
 
@@ -25,6 +26,7 @@ const navigation = [
 ]
 
 const systemNavigation = [
+  { name: 'История изменений', href: '/changelog', icon: FiClock },
   { name: 'Схемы данных', href: '/schemas', icon: FiDatabase },
   { name: 'Настройки', href: '/settings', icon: FiSettings },
 ]

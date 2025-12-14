@@ -14,6 +14,30 @@ async function getUserId(): Promise<number> {
   return typeof session.user.id === 'string' ? parseInt(session.user.id) : session.user.id
 }
 
+// Получить аватар текущего пользователя
+export async function getCurrentUserAvatar() {
+  try {
+    const session = await auth()
+    
+    if (!session?.user?.id) {
+      return null
+    }
+
+    const userId = typeof session.user.id === 'string' 
+      ? parseInt(session.user.id) 
+      : session.user.id
+
+    const user = await prisma.allowedUser.findUnique({
+      where: { userId },
+      select: { avatarUrl: true }
+    })
+
+    return user?.avatarUrl || null
+  } catch (error) {
+    return null
+  }
+}
+
 // Получить профиль пользователя
 export async function getUserProfile() {
   const userId = await getUserId()

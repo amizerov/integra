@@ -17,6 +17,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme()
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
   const pathname = usePathname() || ''
 
   // Автоматический выход при истечении сессии
@@ -68,24 +69,51 @@ export function Header({ onMenuClick }: HeaderProps) {
       // Сначала используем аватар из сессии
       setAvatarUrl((session.user as any).avatarUrl || null)
       
-      // Затем загружаем актуальный из API
-      fetch('/api/user/avatar')
-        .then(res => {
-          if (res.status === 401) {
-            // Сессия истекла на сервере
+      // Затем загружаем актуальный через Server Action
+      import('@/app/(authenticated)/profile/actions').then(({ getCurrentUserAvatar }) => {
+        getCurrentUserAvatar()
+          .then(avatarUrl => {
+            if (avatarUrl) {
+              setAvatarUrl(avatarUrl)
+            }
+          })
+          .catch(() => {
+            // Сессия истекла
             signOut({ callbackUrl: '/login' })
-            return null
-          }
-          return res.json()
-        })
-        .then(data => {
-          if (data?.avatarUrl) {
-            setAvatarUrl(data.avatarUrl)
-          }
-        })
-        .catch(() => {})
+          })
+      })
     }
   }, [status, session, pathname])
+
+  // Загружаем количество непросмотренных изменений
+  useEffect(() => {
+    if (status === 'authenticated') {
+      import('@/app/(authenticated)/changelog/actions').then(({ getUnreadChangesCount }) => {
+        getUnreadChangesCount()
+          .then(result => {
+            if (result.success) {
+              setUnreadCount(result.count)
+            }
+          })
+          .catch(() => {})
+      })
+      
+      // Обновляем каждые 30 секунд
+      const interval = setInterval(() => {
+        import('@/app/(authenticated)/changelog/actions').then(({ getUnreadChangesCount }) => {
+          getUnreadChangesCount()
+            .then(result => {
+              if (result.success) {
+                setUnreadCount(result.count)
+              }
+            })
+            .catch(() => {})
+        })
+      }, 30000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [status, pathname])
 
   // Basic mapping of route -> title + description. Extend as needed.
   const route = pathname.split('?')[0]
@@ -153,9 +181,17 @@ export function Header({ onMenuClick }: HeaderProps) {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" title="Уведомления" className="hidden sm:flex">
-            <FiBell className="h-5 w-5" />
-          </Button>
+          <Link href="/changelog">
+            <Button variant="ghost" size="icon" title="История изменений" className="relative">
+              <FiBell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75"></span>
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                </span>
+              )}
+            </Button>
+          </Link>
 
           {/* User Menu */}
           <div className="relative">

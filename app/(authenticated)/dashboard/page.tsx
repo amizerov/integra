@@ -7,6 +7,9 @@ import { FiArrowRight, FiMap } from 'react-icons/fi'
 import DatabaseErrorScreen from '@/components/DatabaseErrorScreen'
 import TopSystemsCards from './TopSystems'
 
+// Обновлять каждые 5 минут
+export const revalidate = 300
+
 export default async function DashboardPage() {
   let stats
   
