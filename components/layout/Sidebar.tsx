@@ -57,12 +57,16 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center h-16 px-6 border-b border-border">
           <Link href="/dashboard" className="flex items-center space-x-2 flex-1">
-            <div className="h-8 px-3 bg-[#4285B4] rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-xs">НИВЦ</span>
+            <div className="relative">
+              <img 
+                src="/logo.jpg" 
+                alt="НИВЦ" 
+                className="h-auto w-auto relative z-10"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-semibold text-sm">АИС Интеграция</span>
-              <span className="text-xs text-muted-foreground">Версия 1.4.4</span>
+              <span className="text-xs text-muted-foreground">Версия 1.4.5</span>
             </div>
           </Link>
           
@@ -78,7 +82,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 pt-8 pb-4 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
             return (
