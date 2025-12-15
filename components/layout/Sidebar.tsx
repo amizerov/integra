@@ -28,6 +28,7 @@ const navigation = [
 const systemNavigation = [
   { name: 'История изменений', href: '/changelog', icon: FiClock },
   { name: 'Схемы данных', href: '/schemas', icon: FiDatabase },
+  { name: 'Пользователи', href: '/users', icon: FiUsers },
   { name: 'Настройки', href: '/settings', icon: FiSettings },
 ]
 
