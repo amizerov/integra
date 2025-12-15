@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { unlink } from 'fs/promises'
 import path from 'path'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function deleteDocument(
   systemId: number,
@@ -38,6 +39,8 @@ export async function deleteDocument(
     // Get file names for deletion from public folder
     const scanDoc = doc.intgr4_document_full_text_intgr3_managing_documents_scan_document_idTointgr4_document_full_text
     const textDoc = doc.intgr4_document_full_text_intgr3_managing_documents_text_document_idTointgr4_document_full_text
+
+    const documentName = scanDoc?.fileName || textDoc?.fileName || 'Документ'
 
     // Delete managing document record
     await prisma.managingDocument.delete({
@@ -80,6 +83,14 @@ export async function deleteDocument(
         // File might not exist, ignore
       }
     }
+
+    // Логируем удаление документа
+    await logDocumentChange(
+      doc.scanDocumentId || doc.textDocumentId || 0,
+      'deleted',
+      documentName,
+      { systemId, normativeDocumentId }
+    )
 
     revalidatePath(`/systems/${systemId}`)
 

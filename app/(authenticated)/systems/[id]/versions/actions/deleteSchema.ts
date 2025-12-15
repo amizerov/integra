@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { unlink, rmdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync, readdirSync } from 'fs'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function deleteSchema(versionId: number, dataSchemaVersion: number, systemId: number) {
   try {
@@ -69,6 +70,14 @@ export async function deleteSchema(versionId: number, dataSchemaVersion: number,
         }
       }
     }
+
+    // Логируем удаление схемы
+    await logDocumentChange(
+      documentId || 0,
+      'deleted',
+      `Схема БД v${dataSchemaVersion}: ${fileName || 'schema'}`,
+      { versionId, systemId, dataSchemaVersion }
+    )
 
     return { success: true }
   } catch (error) {

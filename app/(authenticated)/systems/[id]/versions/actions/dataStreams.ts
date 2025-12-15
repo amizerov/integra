@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { logStreamChange } from '@/lib/changeLogHelpers'
 
 export async function getDataStreams(versionId: number) {
   try {
@@ -163,8 +164,23 @@ export async function createDataStream(
         creationDate: new Date(),
         lastChangeUser: userId,
         lastChangeDate: new Date()
+      },
+      include: {
+        sourceVersion: { include: { system: true } },
+        recipientVersion: { include: { system: true } }
       }
     })
+
+    // Логируем создание потока данных
+    const streamName = stream.recipientVersion 
+      ? `${stream.sourceVersion.system.systemShortName} → ${stream.recipientVersion.system.systemShortName}`
+      : `${stream.sourceVersion.system.systemShortName} (новый поток)`
+    await logStreamChange(
+      nextStreamId,
+      'created',
+      streamName,
+      { versionId, recipientVersionId: data.recipientVersionId }
+    )
 
     revalidatePath(`/systems`)
 
@@ -193,7 +209,7 @@ export async function updateDataStream(
   const userId = Number(session.user.id)
 
   try {
-    await prisma.dataStream.update({
+    const updatedStream = await prisma.dataStream.update({
       where: {
         streamId_versionId: { streamId, versionId }
       },
@@ -203,8 +219,23 @@ export async function updateDataStream(
         shareDatabase: data.shareDatabase ? 1 : 0,
         lastChangeUser: userId,
         lastChangeDate: new Date()
+      },
+      include: {
+        sourceVersion: { include: { system: true } },
+        recipientVersion: { include: { system: true } }
       }
     })
+
+    // Логируем обновление потока данных
+    const streamName = updatedStream.recipientVersion
+      ? `${updatedStream.sourceVersion.system.systemShortName} → ${updatedStream.recipientVersion.system.systemShortName}`
+      : `${updatedStream.sourceVersion.system.systemShortName}`
+    await logStreamChange(
+      streamId,
+      'updated',
+      streamName,
+      { versionId, recipientVersionId: data.recipientVersionId }
+    )
 
     revalidatePath(`/systems`)
 
@@ -223,6 +254,15 @@ export async function deleteDataStream(streamId: number, versionId: number) {
   }
 
   try {
+    // Получаем информацию о потоке для логирования
+    const stream = await prisma.dataStream.findUnique({
+      where: { streamId_versionId: { streamId, versionId } },
+      include: {
+        sourceVersion: { include: { system: true } },
+        recipientVersion: { include: { system: true } }
+      }
+    })
+
     // Check if there are exchange formats linked to this stream
     const formatsCount = await prisma.exchangeFormat.count({
       where: { streamId, versionId }
@@ -237,6 +277,19 @@ export async function deleteDataStream(streamId: number, versionId: number) {
         streamId_versionId: { streamId, versionId }
       }
     })
+
+    // Логируем удаление потока данных
+    if (stream) {
+      const streamName = stream.recipientVersion
+        ? `${stream.sourceVersion.system.systemShortName} → ${stream.recipientVersion.system.systemShortName}`
+        : `${stream.sourceVersion.system.systemShortName}`
+      await logStreamChange(
+        streamId,
+        'deleted',
+        streamName,
+        { versionId }
+      )
+    }
 
     revalidatePath(`/systems`)
 

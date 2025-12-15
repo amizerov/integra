@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/db'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function deleteSchema(versionId: number, dataSchemaVersion: number) {
   try {
@@ -41,6 +42,14 @@ export async function deleteSchema(versionId: number, dataSchemaVersion: number)
         // Игнорируем ошибку если документ уже удалён или используется в других местах
       })
     }
+
+    // Логируем удаление схемы
+    await logDocumentChange(
+      schema.dataSchemaDocumentId || 0,
+      'deleted',
+      `Схема БД v${dataSchemaVersion}: ${schema.intgr4_document_full_text?.fileName || 'schema'}`,
+      { versionId, dataSchemaVersion }
+    )
 
     return { success: true }
   } catch (error) {

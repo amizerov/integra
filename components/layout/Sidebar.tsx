@@ -62,7 +62,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             </div>
             <div className="flex flex-col">
               <span className="font-semibold text-sm">АИС Интеграция</span>
-              <span className="text-xs text-muted-foreground">Версия 1.4.3</span>
+              <span className="text-xs text-muted-foreground">Версия 1.4.4</span>
             </div>
           </Link>
           

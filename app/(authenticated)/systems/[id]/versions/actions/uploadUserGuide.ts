@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function uploadUserGuide(
   versionId: number,
@@ -123,6 +124,15 @@ export async function uploadUserGuide(
         lastChangeDate: new Date(),
       },
     })
+
+    // Логируем загрузку руководства
+    const action = existingGuide?.fulltextDocumentId ? 'updated' : 'created'
+    await logDocumentChange(
+      documentId,
+      action,
+      `Руководство: ${truncatedTitle}`,
+      { versionId, systemId, title: truncatedTitle }
+    )
 
     return { success: true, data: userGuide }
   } catch (error) {

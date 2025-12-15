@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function uploadSchema(
   versionId: number,
@@ -104,7 +105,13 @@ export async function uploadSchema(
         lastChangeDate: new Date(),
       },
     })
-
+    // Логируем загрузку схемы
+    await logDocumentChange(
+      document.documentId,
+      'created',
+      `Схема БД v${dataSchemaVersion}: ${file.name}`,
+      { versionId, systemId, dataSchemaVersion }
+    )
     return { success: true, data: schema }
   } catch (error) {
     console.error('Error uploading schema:', error)

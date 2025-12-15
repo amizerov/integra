@@ -2,12 +2,30 @@
 
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { logVersionChange } from '@/lib/changeLogHelpers'
 
 export async function deleteVersion(versionId: number) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return { success: false, error: 'Не авторизован' }
+    }
+
+    // Получаем информацию о версии перед удалением
+    const version = await prisma.systemVersion.findUnique({
+      where: { versionId },
+      include: {
+        system: {
+          select: {
+            systemShortName: true,
+            systemName: true
+          }
+        }
+      }
+    })
+
+    if (!version) {
+      return { success: false, error: 'Версия не найдена' }
     }
 
     // Используем транзакцию для удаления всех связанных записей
@@ -56,6 +74,15 @@ export async function deleteVersion(versionId: number) {
         where: { versionId }
       })
     })
+
+    // Логируем удаление версии
+    await logVersionChange(
+      versionId,
+      'deleted',
+      version.system.systemShortName || 'Система',
+      version.versionCode || 'Версия',
+      { systemId: version.systemId }
+    )
 
     return { success: true }
   } catch (error) {

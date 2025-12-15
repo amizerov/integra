@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function uploadDocument(
   systemId: number,
@@ -92,6 +93,20 @@ export async function uploadDocument(
     await mkdir(publicDir, { recursive: true })
     const filePath = path.join(publicDir, fileName)
     await writeFile(filePath, buffer)
+
+    // Получаем название системы для логирования
+    const system = await prisma.informationSystem.findUnique({
+      where: { systemId },
+      select: { systemShortName: true }
+    })
+
+    // Логируем загрузку документа
+    await logDocumentChange(
+      nextDocumentId,
+      'created',
+      fileName,
+      { systemId, systemName: system?.systemShortName, fileSize }
+    )
 
     revalidatePath(`/systems/${systemId}`)
 

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { logVersionChange } from '@/lib/changeLogHelpers'
 
 export async function createVersion(systemId: number) {
   const session = await auth()
@@ -44,8 +45,25 @@ export async function createVersion(systemId: number) {
         creationDate: new Date(),
         lastChangeUser: userId,
         lastChangeDate: new Date()
+      },
+      include: {
+        system: {
+          select: {
+            systemShortName: true,
+            systemName: true
+          }
+        }
       }
     })
+
+    // Логируем создание версии
+    await logVersionChange(
+      version.versionId,
+      'created',
+      version.system.systemShortName || 'Система',
+      versionCode,
+      { systemId, versionDevelopmentYear: currentYear }
+    )
 
     revalidatePath(`/systems/${systemId}`)
 

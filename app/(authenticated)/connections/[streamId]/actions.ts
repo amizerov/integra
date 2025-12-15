@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import fs from 'fs/promises'
 import path from 'path'
+import { logStreamChange, logDocumentChange } from '@/lib/changeLogHelpers'
 
 // Получить ID пользователя из сессии
 async function getUserId(): Promise<number> {
@@ -68,6 +69,28 @@ export async function createExchangeFormatVersion(data: {
     }
   })
 
+  // Получаем информацию о потоке для логирования
+  const stream = await prisma.dataStream.findUnique({
+    where: { streamId_versionId: { streamId: data.streamId, versionId: data.versionId } },
+    include: {
+      sourceVersion: { include: { system: true } },
+      recipientVersion: { include: { system: true } }
+    }
+  })
+
+  // Логируем создание версии формата обмена
+  if (stream) {
+    const streamName = stream.recipientVersion
+      ? `${stream.sourceVersion.system.systemShortName || 'Система'} → ${stream.recipientVersion.system.systemShortName || 'Система'}`
+      : (stream.sourceVersion.system.systemShortName || 'Система')
+    await logStreamChange(
+      data.streamId,
+      'created',
+      streamName,
+      { exchangeFormatVersion: nextVersion, versionId: data.versionId }
+    )
+  }
+
   revalidatePath(`/connections/${data.streamId}`)
   return format
 }
@@ -90,6 +113,21 @@ export async function deleteExchangeFormatVersion(data: {
   })
 
   if (!format) throw new Error('Формат не найден')
+
+  // Получаем информацию о потоке для логирования
+  const stream = await prisma.dataStream.findUnique({
+    where: { streamId_versionId: { streamId: data.streamId, versionId: data.versionId } },
+    include: {
+      sourceVersion: { include: { system: true } },
+      recipientVersion: { include: { system: true } }
+    }
+  })
+
+  const streamName = stream
+    ? (stream.recipientVersion
+      ? `${stream.sourceVersion.system.systemShortName || 'Система'} → ${stream.recipientVersion.system.systemShortName || 'Система'}`
+      : (stream.sourceVersion.system.systemShortName || 'Система'))
+    : 'Поток данных'
 
   // Удаляем связанные документы из БД
   if (format.formatDescriptionDocumentId) {
@@ -117,6 +155,14 @@ export async function deleteExchangeFormatVersion(data: {
       }
     }
   })
+
+  // Логируем удаление версии формата обмена
+  await logStreamChange(
+    data.streamId,
+    'deleted',
+    streamName,
+    { exchangeFormatVersion: data.exchangeFormatVersion, versionId: data.versionId }
+  )
 
   revalidatePath(`/connections/${data.streamId}`)
   return { success: true }
@@ -193,6 +239,15 @@ export async function uploadFormatDocument(formData: FormData) {
     data: updateData
   })
 
+  // Логируем загрузку документа
+  const docTypeRu = documentType === 'description' ? 'Описание формата' : 'Пример формата'
+  await logDocumentChange(
+    newDocumentId,
+    'created',
+    `${docTypeRu}: ${fileName}`,
+    { streamId, exchangeFormatVersion, versionId, documentType }
+  )
+
   revalidatePath(`/connections/${streamId}`)
   return document
 }
@@ -231,6 +286,8 @@ export async function deleteFormatDocument(data: {
     ? format.intgr4_document_full_text_intgr_2_2_1_exchange_formats_format_description_document_idTointgr4_document_full_text
     : format.intgr4_document_full_text_intgr_2_2_1_exchange_formats_format_sample_document_idTointgr4_document_full_text
 
+  const documentName = document?.fileName || 'Документ'
+
   if (documentId) {
     // Удаляем документ из БД
     await prisma.documentFullText.delete({
@@ -267,6 +324,15 @@ export async function deleteFormatDocument(data: {
       },
       data: updateData
     })
+
+    // Логируем удаление документа
+    const docTypeRu = data.documentType === 'description' ? 'Описание формата' : 'Пример формата'
+    await logDocumentChange(
+      documentId,
+      'deleted',
+      `${docTypeRu}: ${documentName}`,
+      { streamId: data.streamId, exchangeFormatVersion: data.exchangeFormatVersion, versionId: data.versionId, documentType: data.documentType }
+    )
   }
 
   revalidatePath(`/connections/${data.streamId}`)
@@ -312,8 +378,23 @@ export async function updateDataStream(data: {
       shareDatabase: data.shareDatabase,
       lastChangeUser: userId,
       lastChangeDate: new Date()
+    },
+    include: {
+      sourceVersion: { include: { system: true } },
+      recipientVersion: { include: { system: true } }
     }
   })
+
+  // Логируем обновление потока данных
+  const streamName = stream.recipientVersion
+    ? `${stream.sourceVersion.system.systemShortName || 'Система'} → ${stream.recipientVersion.system.systemShortName || 'Система'}`
+    : (stream.sourceVersion.system.systemShortName || 'Система')
+  await logStreamChange(
+    data.streamId,
+    'updated',
+    streamName,
+    { versionId: data.versionId, dataStreamDescription: data.dataStreamDescription }
+  )
 
   revalidatePath(`/connections/${data.streamId}`)
   return stream

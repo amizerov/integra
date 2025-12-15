@@ -180,6 +180,12 @@ export async function deleteSystem(systemId: number) {
   }
 
   try {
+    // Получаем данные системы для логирования ПЕРЕД удалением
+    const system = await prisma.informationSystem.findUnique({
+      where: { systemId },
+      select: { systemShortName: true, systemName: true }
+    })
+
     const [versionsCount, documentsCount] = await Promise.all([
       prisma.systemVersion.count({ where: { systemId } }),
       prisma.managingDocument.count({ where: { systemId } })
@@ -196,10 +202,6 @@ export async function deleteSystem(systemId: number) {
     await prisma.informationSystem.delete({ where: { systemId } })
 
     // Логируем удаление системы
-    const system = await prisma.informationSystem.findUnique({
-      where: { systemId },
-      select: { systemShortName: true, systemName: true }
-    })
     if (system) {
       await logSystemChange(
         systemId,

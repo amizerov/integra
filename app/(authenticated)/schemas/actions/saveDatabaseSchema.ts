@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import fs from 'fs/promises'
 import path from 'path'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 interface Table {
   name: string
@@ -182,6 +183,14 @@ export async function saveDatabaseSchema(
         },
       })
 
+      // Логируем обновление схемы
+      await logDocumentChange(
+        existingSchema.dataSchemaDocumentId || 0,
+        'updated',
+        `Схема БД АИС v${existingSchemaVersion}: ${fileName}`,
+        { dataSchemaVersion: existingSchemaVersion, description }
+      )
+
       // Также обновляем файл в public/schemas
       const publicDir = path.join(process.cwd(), 'public', 'schemas')
       await fs.mkdir(publicDir, { recursive: true })
@@ -219,6 +228,14 @@ export async function saveDatabaseSchema(
           userId: Number(session.user.id),
         },
       })
+
+      // Логируем создание схемы
+      await logDocumentChange(
+        document.documentId,
+        'created',
+        `Схема БД АИС v${schema.dataSchemaVersion}: ${fileName}`,
+        { dataSchemaVersion: schema.dataSchemaVersion, description }
+      )
 
       // Также сохраняем файл в public/schemas для просмотра
       const publicDir = path.join(process.cwd(), 'public', 'schemas')

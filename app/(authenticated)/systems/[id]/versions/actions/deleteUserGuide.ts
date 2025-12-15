@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { unlink, rmdir } from 'fs/promises'
 import { join } from 'path'
 import { existsSync, readdirSync } from 'fs'
+import { logDocumentChange } from '@/lib/changeLogHelpers'
 
 export async function deleteUserGuide(versionId: number, systemId: number) {
   try {
@@ -59,6 +60,14 @@ export async function deleteUserGuide(versionId: number, systemId: number) {
         }
       }
     }
+
+    // Логируем удаление руководства
+    await logDocumentChange(
+      documentId || 0,
+      'deleted',
+      `Руководство: ${userGuide.title || fileName || 'document'}`,
+      { versionId, systemId }
+    )
 
     return { success: true }
   } catch (error) {
