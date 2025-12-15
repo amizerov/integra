@@ -9,7 +9,7 @@ export default async function ChangeLogPage() {
   // Отметить как просмотренное при открытии страницы
   await markChangeLogsAsViewed()
 
-  if (!result.success) {
+  if (!result.success || !result.data) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">История изменений</h1>
