@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/contexts/ThemeContext'
 import { 
   FiHome, 
   FiServer, 
@@ -39,6 +40,7 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const { theme } = useTheme()
 
   return (
     <>
@@ -60,7 +62,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <Link href="/dashboard" className="flex items-center space-x-2 flex-1">
             <div className="relative">
               <img 
-                src="/logo.jpg" 
+                src={theme === 'dark' ? '/rcc.png' : '/logo.jpg'}
                 alt="НИВЦ" 
                 className="h-auto w-auto relative z-10"
               />
