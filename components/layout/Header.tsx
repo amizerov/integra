@@ -123,6 +123,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     { match: (p: string) => p.startsWith('/systems'), title: 'Системы', description: 'Управление автоматизированными информационными системами' },
     { match: (p: string) => p.startsWith('/connections'), title: 'Связи', description: 'Карта связей версий систем и потоков данных' },
     { match: (p: string) => p.startsWith('/schemas'), title: 'Схема данных АИС Интеграция', description: 'Физическая ER-диаграмма базы данных PostgreSQL' },
+    { match: (p: string) => p.startsWith('/changelog'), title: 'История изменений', description: 'Журнал всех изменений в системе' },
     { match: (p: string) => p.startsWith('/profile'), title: 'Профиль', description: 'Информация о пользователе' },
     { match: (p: string) => p.startsWith('/settings'), title: 'Настройки', description: 'Настройки приложения' },
     { match: (p: string) => p.startsWith('/admin'), title: 'Администрирование', description: 'Инструменты администрирования' },
@@ -217,7 +218,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                   {session?.user?.name || session?.user?.email}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {(session?.user as any)?.userLevel === 0 ? 'Администратор' : 'Пользователь'}
+                  {(session?.user as any)?.userLevel === 9 ? 'Администратор' : 'Пользователь'}
                 </div>
               </div>
             </button>

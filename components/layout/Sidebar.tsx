@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useSession } from 'next-auth/react'
 import { 
   FiHome, 
   FiServer, 
@@ -41,6 +42,8 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
   const { theme } = useTheme()
+  const { data: session } = useSession()
+  const isAdmin = (session?.user as any)?.userLevel === 9
 
   return (
     <>
@@ -62,7 +65,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <Link href="/dashboard" className="flex items-center space-x-2 flex-1">
             <div className="relative">
               <img 
-                src={theme === 'dark' ? '/rcc.png' : '/logo.jpg'}
+                src={theme === 'dark' ? '/logo.png' : '/logo.jpg'}
                 alt="НИВЦ" 
                 className="h-auto w-auto relative z-10"
               />
@@ -112,6 +115,11 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           {/* System settings */}
           <div className="pt-2 space-y-1">
             {systemNavigation.map((item) => {
+              // Скрываем пункт "Пользователи" для не-администраторов
+              if (item.href === '/users' && !isAdmin) {
+                return null
+              }
+              
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
               return (
                 <Link

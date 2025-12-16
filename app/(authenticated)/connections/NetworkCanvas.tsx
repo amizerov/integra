@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from '@/components/ui/label'
 import { FiMaximize2, FiMinimize2, FiRefreshCw, FiFilter, FiSave, FiPlus, FiMinus, FiFolder, FiEdit2, FiTrash2 } from 'react-icons/fi'
 import { saveNetworkLayout, getAllNetworkLayouts, getNetworkLayout, deleteNetworkLayout, updateNetworkLayout } from '@/app/(authenticated)/connections/actions'
+import { useConfirm } from '@/components/ui/confirm-dialog'
+import toast from 'react-hot-toast'
 import { calculateOptimalLayout, calculateCircularLayout as circularLayout } from '@/app/(authenticated)/connections/actions/graph-layout'
 
 interface NetworkNode {
@@ -101,6 +104,8 @@ const NODE_WIDTH = 140
 const NODE_HEIGHT = 70
 
 export default function NetworkCanvas({ initialNodes, initialEdges, renderToolbar }: NetworkCanvasProps) {
+  const { data: session } = useSession()
+  const confirm = useConfirm()
   const svgRef = useRef<SVGSVGElement>(null)
   const [nodes, setNodes] = useState<NetworkNode[]>([])
   const [draggedNode, setDraggedNode] = useState<string | null>(null)
@@ -591,7 +596,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
   // Сохранить схему в базу
   const handleSaveLayout = useCallback(async () => {
     if (!layoutName.trim()) {
-      alert('Введите название схемы')
+      toast.error('Введите название схемы')
       return
     }
 
@@ -604,12 +609,12 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
     const result = await saveNetworkLayout(layoutName, layoutDescription || null, layoutData, false)
     
     if (result.success) {
-      alert('Схема сохранена!')
+      toast.success('Схема успешно сохранена')
       setShowSaveDialog(false)
       setLayoutName('')
       setLayoutDescription('')
     } else {
-      alert(result.error || 'Ошибка сохранения')
+      toast.error(result.error || 'Ошибка сохранения схемы')
     }
   }, [layoutName, layoutDescription, nodes, zoom, pan])
 
@@ -625,7 +630,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
     const layout = await getNetworkLayout(layoutId)
     
     if (!layout) {
-      alert('Схема не найдена')
+      toast.error('Схема не найдена')
       return
     }
 
@@ -655,7 +660,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
     console.log('Layout loaded from DB and saved to localStorage:', layoutData.length, 'nodes')
 
     setShowLoadDialog(false)
-    alert('Схема загружена!')
+    toast.success('Схема успешно загружена')
   }, [nodes, zoom, pan])
 
   // Открыть диалог редактирования схемы
@@ -671,13 +676,13 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
   // Сохранить изменения схемы
   const handleUpdateLayout = useCallback(async () => {
     if (!editingLayout || !editName.trim()) {
-      alert('Введите название схемы')
+      toast.error('Введите название схемы')
       return
     }
 
     const layout = await getNetworkLayout(editingLayout.id)
     if (!layout) {
-      alert('Схема не найдена')
+      toast.error('Схема не найдена')
       return
     }
 
@@ -690,7 +695,7 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
     )
 
     if (result.success) {
-      alert('Схема обновлена!')
+      toast.success('Схема успешно обновлена')
       setShowEditDialog(false)
       setEditingLayout(null)
       // Обновляем список
@@ -698,27 +703,33 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
       setSavedLayouts(layouts)
       setShowLoadDialog(true)
     } else {
-      alert(result.error || 'Ошибка обновления')
+      toast.error(result.error || 'Ошибка обновления схемы')
     }
   }, [editingLayout, editName, editDescription, editIsPublic])
 
   // Удалить схему
   const handleDeleteLayout = useCallback(async (layoutId: number) => {
-    if (!confirm('Вы уверены, что хотите удалить эту схему?')) {
-      return
-    }
+    const confirmed = await confirm({
+      title: 'Удаление схемы',
+      message: 'Вы уверены, что хотите удалить эту схему? Это действие нельзя отменить.',
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      variant: 'danger'
+    })
+
+    if (!confirmed) return
 
     const result = await deleteNetworkLayout(layoutId)
 
     if (result.success) {
-      alert('Схема удалена!')
+      toast.success('Схема успешно удалена')
       // Обновляем список
       const layouts = await getAllNetworkLayouts()
       setSavedLayouts(layouts)
     } else {
-      alert(result.error || 'Ошибка удаления')
+      toast.error(result.error || 'Ошибка удаления схемы')
     }
-  }, [])
+  }, [confirm])
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-background' : 'relative h-[calc(100vh-11rem)]'}`}>
@@ -1186,32 +1197,43 @@ export default function NetworkCanvas({ initialNodes, initialEdges, renderToolba
                             <div>Изменена: {new Date(layout.updatedAt).toLocaleString('ru-RU')}</div>
                           </div>
                         </div>
-                        <div className="flex gap-1 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditLayout(layout)
-                            }}
-                            title="Редактировать"
-                            className="h-8 w-8 p-0"
-                          >
-                            <FiEdit2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteLayout(layout.id)
-                            }}
-                            title="Удалить"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <FiTrash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {(() => {
+                          // Проверяем права: администратор или владелец схемы
+                          const isAdmin = (session?.user as any)?.userLevel === 9
+                          const isOwner = layout.userId === Number(session?.user?.id)
+                          const canModify = isAdmin || isOwner
+                          
+                          if (!canModify) return null
+                          
+                          return (
+                            <div className="flex gap-1 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEditLayout(layout)
+                                }}
+                                title="Редактировать"
+                                className="h-8 w-8 p-0"
+                              >
+                                <FiEdit2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteLayout(layout.id)
+                                }}
+                                title="Удалить"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <FiTrash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )
+                        })()}
                       </div>
                     </div>
                   ))}

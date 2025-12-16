@@ -22,13 +22,6 @@ export default async function ChangeLogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">История изменений</h1>
-        <p className="text-sm text-muted-foreground">
-          Всего записей: {result.data.length}
-        </p>
-      </div>
-      
       <ChangeLogList logs={result.data} />
     </div>
   )

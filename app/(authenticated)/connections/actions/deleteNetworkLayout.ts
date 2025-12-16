@@ -16,7 +16,13 @@ export async function deleteNetworkLayout(layoutId: number) {
       where: { id: layoutId },
     })
 
-    if (!existing || existing.userId !== Number(session.user.id)) {
+    if (!existing) {
+      throw new Error('Схема не найдена')
+    }
+
+    // Администратор может удалять любые схемы, обычный пользователь - только свои
+    const isAdmin = (session.user as any)?.userLevel === 9
+    if (!isAdmin && existing.userId !== Number(session.user.id)) {
       throw new Error('Нет доступа к этой схеме')
     }
 

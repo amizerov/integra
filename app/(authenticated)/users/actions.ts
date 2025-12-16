@@ -11,6 +11,11 @@ export async function getUsers() {
     return { success: false, error: 'Не авторизован' }
   }
 
+  // Проверяем права администратора
+  if ((session.user as any)?.userLevel !== 9) {
+    return { success: false, error: 'Доступ запрещён. Требуются права администратора' }
+  }
+
   try {
     const users = await prisma.allowedUser.findMany({
       orderBy: { userId: 'asc' },
@@ -35,6 +40,11 @@ export async function getUserById(userId: number) {
   const session = await auth()
   if (!session?.user?.id) {
     return { success: false, error: 'Не авторизован' }
+  }
+
+  // Проверяем права администратора
+  if ((session.user as any)?.userLevel !== 9) {
+    return { success: false, error: 'Доступ запрещён. Требуются права администратора' }
   }
 
   try {
@@ -77,6 +87,11 @@ export async function updateUser(
     return { success: false, error: 'Не авторизован' }
   }
 
+  // Проверяем права администратора
+  if ((session.user as any)?.userLevel !== 9) {
+    return { success: false, error: 'Доступ запрещён. Требуются права администратора' }
+  }
+
   try {
     const updateData: any = {
       userLogin: data.userLogin,
@@ -112,6 +127,11 @@ export async function deleteUser(userId: number) {
     return { success: false, error: 'Не авторизован' }
   }
 
+  // Проверяем права администратора
+  if ((session.user as any)?.userLevel !== 9) {
+    return { success: false, error: 'Доступ запрещён. Требуются права администратора' }
+  }
+
   // Проверяем, что пользователь не удаляет сам себя
   if (Number(session.user.id) === userId) {
     return { success: false, error: 'Нельзя удалить свою учетную запись' }
@@ -142,6 +162,11 @@ export async function createUser(data: {
   const session = await auth()
   if (!session?.user?.id) {
     return { success: false, error: 'Не авторизован' }
+  }
+
+  // Проверяем права администратора
+  if ((session.user as any)?.userLevel !== 9) {
+    return { success: false, error: 'Доступ запрещён. Требуются права администратора' }
   }
 
   try {
