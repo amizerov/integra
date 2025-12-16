@@ -51,17 +51,16 @@ export default function TopSystems({ systems }: TopSystemsProps) {
   return (
     <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 3xl:grid-cols-7 gap-4">
       {systems.slice(0, visibleCount).map((system) => (
-        <Link 
-          key={system.systemId} 
-          href={`/connections?filter=${system.systemId}`}
-        >
-          <Card className="h-full hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-            <CardHeader className="pb-2">
+        <Card key={system.systemId} className="h-full hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
+          <Link href={`/systems/${system.systemId}`}>
+            <CardHeader className="pb-2 cursor-pointer">
               <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
                 {system.systemShortName || system.systemName}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+          </Link>
+          <Link href={`/connections?filter=${system.systemId}`}>
+            <CardContent className="cursor-pointer">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Всего связей</span>
@@ -79,8 +78,8 @@ export default function TopSystems({ systems }: TopSystemsProps) {
                 </div>
               </div>
             </CardContent>
-          </Card>
-        </Link>
+          </Link>
+        </Card>
       ))}
     </div>
   )
