@@ -298,7 +298,7 @@ export function ClassifierEditor() {
                 <button
                   key={classifier.key}
                   onClick={() => handleSelectClassifier(classifier.key)}
-                  className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-2 ${
+                  className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-2 cursor-pointer ${
                     activeClassifier === classifier.key
                       ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                       : 'hover:bg-accent'
