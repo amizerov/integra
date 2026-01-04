@@ -358,7 +358,7 @@
         <h2>Код процедуры</h2>
         <pre><code>CREATE OR ALTER PROC dbo.am_GetStudentsAndGroupsForSubject_v1
   @Nfirm      INT,   -- факультет
-  @PlanID     INT,   -- Educ_Plan.PrK_План
+  @PlanID     INT,   -- Educ_Plan.PrK_Plan
   @SubjectID  INT,   -- Subject_Name.PrK_Subject_Name
   @Year_Study INT,   -- год начала учебного года (например, 2025 для 2025/26)
   @Course     INT,   -- курс (1..)
@@ -367,7 +367,7 @@ AS
 BEGIN
   SET NOCOUNT ON;
 
-  IF @Course &lt; 1 OR @Semester NOT IN (1,2)
+  IF @Course < 1 OR @Semester NOT IN (1,2)
   BEGIN
     -- Некорректные параметры: вернём пустой набор
     SELECT TOP (0)
@@ -376,9 +376,9 @@ BEGIN
          CAST(NULL AS INT)  AS PrK_Group_Stud,
          CAST(NULL AS INT)  AS Owner,
          CAST(NULL AS NVARCHAR(40)) AS Group_Name,
-         CAST(NULL AS INT)  AS FK_Sub_План,
-         CAST(NULL AS NVARCHAR(200)) AS Sub_План_Name,
-         CAST(NULL AS INT)  AS FK_План_Year,
+         CAST(NULL AS INT)  AS FK_Sub_Plan,
+         CAST(NULL AS NVARCHAR(200)) AS Sub_Plan_Name,
+         CAST(NULL AS INT)  AS FK_Plan_Year,
          CAST(NULL AS INT)  AS PrK_Entrant,
          CAST(NULL AS NVARCHAR(60)) AS Family,
          CAST(NULL AS NVARCHAR(60)) AS First_Name,
@@ -393,10 +393,10 @@ BEGIN
   DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);
 
   DECLARE @PYE INT;
-  SELECT @PYE = pye.PrK_План_Year
+  SELECT @PYE = pye.PrK_Plan_Year
   FROM dbo.Plan_Year_Enter pye
   WHERE pye.NFirm = @Nfirm
-    AND pye.FK_План = @PlanID
+    AND pye.FK_Plan = @PlanID
     AND pye.Year_Enter = @Year_Enter;
 
   IF @PYE IS NULL
@@ -408,9 +408,9 @@ BEGIN
          CAST(NULL AS INT)  AS PrK_Group_Stud,
          CAST(NULL AS INT)  AS Owner,
          CAST(NULL AS NVARCHAR(40)) AS Group_Name,
-         CAST(NULL AS INT)  AS FK_Sub_План,
-         CAST(NULL AS NVARCHAR(200)) AS Sub_План_Name,
-         CAST(NULL AS INT)  AS FK_План_Year,
+         CAST(NULL AS INT)  AS FK_Sub_Plan,
+         CAST(NULL AS NVARCHAR(200)) AS Sub_Plan_Name,
+         CAST(NULL AS INT)  AS FK_Plan_Year,
          CAST(NULL AS INT)  AS PrK_Entrant,
          CAST(NULL AS NVARCHAR(60)) AS Family,
          CAST(NULL AS NVARCHAR(60)) AS First_Name,
@@ -421,20 +421,20 @@ BEGIN
     RETURN;
   END;
 
-  -- Подпланы предмета в данном семестре (валидные на год набора)
+  -- ПодPlanы предмета в данном семестре (валидные на год набора)
   IF OBJECT_ID('tempdb..#Subplans') IS NOT NULL DROP TABLE #Subplans;
-  SELECT DISTINCT ct.FK_Sub_План
+  SELECT DISTINCT ct.FK_Sub_Plan
   INTO #Subplans
   FROM dbo.Subject_Name_Order sno
   JOIN dbo.Comp_Term ct
     ON ct.NFirm      = sno.NFirm
    AND ct.CodOrderID = sno.PrK_Subject_Order
   WHERE sno.NFirm = @Nfirm
-    AND sno.FK_План = @PlanID
+    AND sno.FK_Plan = @PlanID
     AND sno.FK_Subject_Name = @SubjectID
     AND ct.Num_Term = @Num_Term
-    AND ct.Beg_Act &lt;= @Year_Enter
-    AND (ct.End_Act = 0 OR ct.End_Act &gt;= @Year_Enter);
+    AND ct.Beg_Act <= @Year_Enter
+    AND (ct.End_Act = 0 OR ct.End_Act >= @Year_Enter);
 
   -- Кандидаты групп
   IF OBJECT_ID('tempdb..#Groups') IS NOT NULL DROP TABLE #Groups;
@@ -442,30 +442,30 @@ BEGIN
     Nfirm           INT NOT NULL,
     PrK_Group_Stud  INT NOT NULL,
     Owner           INT NOT NULL,
-    FK_Sub_План     INT NULL,
+    FK_Sub_Plan     INT NULL,
     FK_Plan_Year    INT NOT NULL,
     Group_Name      NVARCHAR(40) NOT NULL,
     Source_Mode     NVARCHAR(20) NOT NULL  -- by_subplan | fallback_common
   );
 
-  -- 1) Точный режим: группы запуска по найденным подпланам
-  INSERT INTO #Groups (Nfirm, PrK_Group_Stud, Owner, FK_Sub_План, FK_План_Year, Group_Name, Source_Mode)
-  SELECT gs.NFirm, gs.PrK_Group_Stud, gs.Owner, gs.FK_Sub_План, gs.FK_План_Year, gs.Group_Name, N'by_subplan'
+  -- 1) Точный режим: группы запуска по найденным подPlanам
+  INSERT INTO #Groups (Nfirm, PrK_Group_Stud, Owner, FK_Sub_Plan, FK_Plan_Year, Group_Name, Source_Mode)
+  SELECT gs.NFirm, gs.PrK_Group_Stud, gs.Owner, gs.FK_Sub_Plan, gs.FK_Plan_Year, gs.Group_Name, N'by_subplan'
   FROM dbo.Group_Stud gs
   WHERE gs.NFirm = @Nfirm
-    AND gs.FK_План_Year = @PYE
-    AND gs.FK_Sub_План IS NOT NULL
-    AND EXISTS (SELECT 1 FROM #Subplans s WHERE s.FK_Sub_План = gs.FK_Sub_План);
+    AND gs.FK_Plan_Year = @PYE
+    AND gs.FK_Sub_Plan IS NOT NULL
+    AND EXISTS (SELECT 1 FROM #Subplans s WHERE s.FK_Sub_Plan = gs.FK_Sub_Plan);
 
-  -- 2) Fallback: если по подпланам пусто, берём общие группы запуска
+  -- 2) Fallback: если по подPlanам пусто, берём общие группы запуска
   IF NOT EXISTS (SELECT 1 FROM #Groups)
   BEGIN
-    INSERT INTO #Groups (Nfirm, PrK_Group_Stud, Owner, FK_Sub_План, FK_План_Year, Group_Name, Source_Mode)
-    SELECT gs.NFirm, gs.PrK_Group_Stud, gs.Owner, gs.FK_Sub_План, gs.FK_План_Year, gs.Group_Name, N'fallback_common'
+    INSERT INTO #Groups (Nfirm, PrK_Group_Stud, Owner, FK_Sub_Plan, FK_Plan_Year, Group_Name, Source_Mode)
+    SELECT gs.NFirm, gs.PrK_Group_Stud, gs.Owner, gs.FK_Sub_Plan, gs.FK_Plan_Year, gs.Group_Name, N'fallback_common'
     FROM dbo.Group_Stud gs
     WHERE gs.NFirm = @Nfirm
-      AND gs.FK_План_Year = @PYE
-      AND gs.FK_Sub_План IS NULL;
+      AND gs.FK_Plan_Year = @PYE
+      AND gs.FK_Sub_Plan IS NULL;
   END;
 
   -- Последний «живой» статус по студенту
@@ -488,8 +488,8 @@ BEGIN
     g.Owner,
     g.Group_Name,
     g.FK_Sub_Plan,
-    sp.Sub_План_Name,
-    g.FK_План_Year,
+    sp.Sub_Plan_Name,
+    g.FK_Plan_Year,
     e.PrK_Entrant,
     p.Family,
     p.First_Name,
@@ -510,7 +510,7 @@ BEGIN
     ON p.PrK_Person = e.FK_Person
   LEFT JOIN dbo.Sub_Plan sp
     ON sp.NFirm = g.NFirm
-   AND sp.PrK_Sub_План = g.FK_Sub_План
+   AND sp.PrK_Sub_Plan = g.FK_Sub_Plan
   ORDER BY g.Source_Mode, g.Group_Name, p.Family, p.First_Name, p.Second_Name;
 END</code></pre>
       </section>
