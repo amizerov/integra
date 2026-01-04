@@ -33,6 +33,37 @@
             color: white;
             padding: 40px;
             text-align: center;
+            position: relative;
+        }
+
+        .home-link {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(6px);
+            transition: all 0.2s;
+        }
+
+        .home-link:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .home-link svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
         }
 
         header h1 {
@@ -356,19 +387,30 @@
             nav ul {
                 flex-direction: column;
             }
+
+            .home-link {
+                top: 12px;
+                right: 12px;
+                padding: 6px 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <a class="home-link" href="index.htm" aria-label="Оглавление">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+                </svg>
+                <span>Оглавление</span>
+            </a>
             <h1><span class="icon icon-database"></span>NewStud: Схема БД (MS SQL)</h1>
             <p>Краткое руководство для RAG-систем</p>
         </header>
 
         <nav>
             <ul>
-                <li><a href="index.htm">← Оглавление</a></li>
                 <li><a href="#concepts">Ключевые понятия</a></li>
                 <li><a href="#er">ER-диаграмма</a></li>
                 <li><a href="#tables">Таблицы БД</a></li>
