@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 // Публичные пути, доступные без авторизации
-const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
+// NB: используем суффикс '/' для префикс-матчинга папки, чтобы не зацепить похожие пути (например, /schedule)
+const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/sched/']
 
 function isPublicPath(pathname: string): boolean {
   return publicPaths.some(path => pathname.startsWith(path))
@@ -35,6 +36,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|docs|graphviz|schemas|login|register|verify-email|forgot-password|reset-password|.*\\.png|.*\\.webp|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.dot|.*\\.xml).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|docs|graphviz|schemas|sched|login|register|verify-email|forgot-password|reset-password|.*\\.png|.*\\.webp|.*\\.jpg|.*\\.jpeg|.*\\.svg|.*\\.ico|.*\\.dot|.*\\.xml).*)',
   ],
 }
