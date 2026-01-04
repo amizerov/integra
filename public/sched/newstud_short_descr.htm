@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewStud: Схема БД (MS SQL) — Краткое руководство</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        nav {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            border-bottom: 2px solid #e9ecef;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.3s;
+            background: white;
+            border: 1px solid #667eea;
+        }
+
+        nav a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        h2 {
+            color: #667eea;
+            margin: 40px 0 20px 0;
+            font-size: 2em;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            margin: 30px 0 15px 0;
+            font-size: 1.5em;
+        }
+
+        h4 {
+            color: #555;
+            margin: 20px 0 10px 0;
+            font-size: 1.2em;
+        }
+
+        .concept-list {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .concept-list li {
+            margin: 12px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .concept-list li::before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+
+        .concept-list code {
+            background: #e7e9fc;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .er-diagram {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #fdcb6e;
+        }
+
+        .er-diagram ul {
+            list-style: none;
+        }
+
+        .er-diagram li {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
+        }
+
+        .table-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+
+        .table-card:hover {
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .table-card h3 {
+            margin-top: 0;
+            color: #667eea;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 5px 5px 5px 0;
+        }
+
+        .badge-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .badge-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        pre {
+            background: #ffffff;
+            color: #000000;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border: 1px solid #e1e4e8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            line-height: 1.5;
+        }
+
+        pre code {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9em;
+            display: block;
+        }
+
+        code {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 5px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .icon {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            margin-right: 10px;
+            vertical-align: middle;
+            position: relative;
+            top: -2px;
+        }
+
+        .icon-database {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+        }
+
+        .icon-key {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>');
+        }
+
+        .icon-link {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>');
+        }
+
+        .icon-diagram {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>');
+        }
+
+        .icon-table {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 10.02h5V21h-5zM17 21h3c1.1 0 2-.9 2-2v-9h-5v11zm3-18H5c-1.1 0-2 .9-2 2v3h19V5c0-1.1-.9-2-2-2zM3 19c0 1.1.9 2 2 2h3V10.02H3V19z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 10.02h5V21h-5zM17 21h3c1.1 0 2-.9 2-2v-9h-5v11zm3-18H5c-1.1 0-2 .9-2 2v3h19V5c0-1.1-.9-2-2-2zM3 19c0 1.1.9 2 2 2h3V10.02H3V19z"/></svg>');
+        }
+
+        .icon-bolt {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>');
+        }
+
+        .icon-book {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>');
+        }
+
+        .icon-bulb {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1z"/></svg>');
+        }
+
+        .icon-check {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+
+        .icon-doc {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
+            mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
+            vertical-align: middle;
+            position: relative;
+            top: -2px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            nav ul {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span class="icon icon-database"></span>NewStud: Схема БД (MS SQL)</h1>
+            <p>Краткое руководство для RAG-систем</p>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#concepts">Ключевые понятия</a></li>
+                <li><a href="#er">ER-диаграмма</a></li>
+                <li><a href="#tables">Таблицы БД</a></li>
+                <li><a href="#queries">Типовые запросы</a></li>
+                <li><a href="#glossary">Глоссарий</a></li>
+                <li><a href="#recommendations">Рекомендации</a></li>
+            </ul>
+        </nav>
+
+        <div class="content">
+            <section>
+                <p class="info-box">
+                    <strong><span class="icon-doc"></span>О документе:</strong> Этот документ описывает основные сущности БД NewStud и типовые связи/джойны, 
+                    необходимые для построения запросов для расписания и анализа учебных планов. Структура ориентирована на поиск (RAG): 
+                    каждую таблицу сопровождают назначение, ключи и шаблоны запросов.
+                </p>
+            </section>
+
+            <section id="concepts">
+                <h2><span class="icon icon-key"></span>Ключевые понятия</h2>
+                <div class="concept-list">
+                    <ul>
+                        <li><strong>NFirm</strong> — код подразделения (факультета). Для МГУ-уровня часто <code>99</code>. В запросах почти всегда используется в условиях и связях.</li>
+                        <li><strong>Year_Enter</strong> — год набора/поступления (в таблице <code>Plan_Year_Enter</code>).</li>
+                        <li><strong>Course/Kurs</strong> — курс обучения. Номер семестра: <code>Num_Term = (Kurs - 1) * 2 + Semester</code>.</li>
+                        <li><strong>Semester (1|2)</strong> — семестр в учебном году. В ряде таблиц используется номер семестра <code>Num_Term</code> (сквозная нумерация).</li>
+                        <li><strong>Sub_Plan</strong> — подплан (разбиение студентов на потоки/группы в рамках учебного плана).</li>
+                        <li><strong>Subject_Name_Order (SNO)</strong> — расположение дисциплин в плане; сквозной ключ предмета в плане. Компоненты семестров (<code>Comp_Term</code>) ссылаются на SNO через <code>CodOrderID</code>.</li>
+                        <li><strong>Comp_Term (CT)</strong> — «компонент семестра»: хранит недельную нагрузку по типам занятий и длительность (в неделях) для конкретного подплана и семестра.</li>
+                        <li><strong>Graph</strong> — календарная сетка плана: для каждого <code>Term</code> задаёт длительность <code>Duration</code> (в неделях) и ссылки на недельный календарь <code>FK_Week</code> (таблица <code>Num_Week</code>). Используется для проверки консистентности с <code>Comp_Term</code>.</li>
+                        <li><strong>Status</strong> — статусы студента; для «активных» используются коды: <code>1, 2, 3, 4, 5, 9</code>.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="er">
+                <h2><span class="icon icon-link"></span>ER-обзор (словами)</h2>
+                <div class="info-box">
+                    <ul style="list-style: none; padding-left: 0;">
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Educ_Plan</code> (план) <strong>1—N</strong> <code>Plan_Year_Enter</code> (наборы год/план)
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Educ_Plan</code> <strong>1—N</strong> <code>Subject_Name_Order</code> (позиции дисциплин в плане)
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Subject_Name_Order</code> <strong>1—N</strong> <code>Comp_Term</code> (через <code>Comp_Term.CodOrderID = SNO.PrK_Subject_Order</code>)<br>
+                            <span style="margin-left: 20px; display: block; margin-top: 8px;">Одновременно <code>Comp_Term.FK_Sub_Plan</code> → <code>Sub_Plan.PrK_Sub_Plan</code></span>
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Educ_Plan</code> <strong>1—N</strong> <code>Sub_Plan</code> (подпланы плана)
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Sub_Plan</code> <strong>1—N</strong> <code>Group_Stud</code> (учебные группы набора)
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Group_Stud</code> <strong>1—N</strong> <code>Entrant</code> (студенты), у которых активный статус в <code>Status</code> (последняя запись по дате)
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <code>Educ_Plan</code> <strong>1—N</strong> <code>Graph</code> (календарные параметры по семестрам)<br>
+                            <span style="margin-left: 20px; display: block; margin-top: 8px;"><code>Graph.FK_Week</code> → <code>Num_Week.PrK_Week</code> (нумерация учебных недель)</span>
+                        </li>
+                        <li style="margin: 15px 0; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #667eea;">
+                            <strong>Справочники:</strong> <code>Type_Business</code> (уровень образования), <code>Form_Education</code> (очная/заочная), <code>Subject_Name</code> (словарь дисциплин), <code>Spec/Name_Spec</code> (направления)
+                        </li>
+                    </ul>
+                </div>
+
+                <h3><span class="icon icon-diagram"></span>Визуальная диаграмма базы данных</h3>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <img src="db_diagram.png" alt="Диаграмма базы данных NewStud" style="max-width: 100%; height: auto; border: 1px solid #e9ecef; border-radius: 6px;">
+                    <p style="margin-top: 15px; color: #666; font-size: 0.9em;">Рисунок 1: Структура базы данных NewStud с основными связями</p>
+                </div>
+            </section>
+
+            <section id="tables">
+                <h2><span class="icon icon-table"></span>Таблицы: назначение и ключи</h2>
+
+                <div class="table-card">
+                    <h3>Educ_Plan</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Учебный план факультета</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Plan (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>Fk_Type</code> → <code>Type_Business.PrK_Type</code></li>
+                        <li><code>Fk_Form_Educ</code> → <code>Form_Education.PrK_Form_Educ</code></li>
+                        <li><code>Fk_Standart</code> (стандарт)</li>
+                        <li><code>Name_Plan</code>, <code>God</code> (год создания)</li>
+                    </ul>
+                    <p><strong>Джойны:</strong></p>
+                    <pre><code>-- План и его тип/форма
+SELECT ep.PrK_Plan, ep.Name_Plan, tb.Name_Type, fe.Name_Form_Educ
+FROM Educ_Plan ep
+LEFT JOIN Type_Business  tb ON tb.PrK_Type      = ep.Fk_Type
+LEFT JOIN Form_Education fe ON fe.PrK_Form_Educ = ep.Fk_Form_Educ
+WHERE ep.NFirm = @Nfirm;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Plan_Year_Enter</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Набор (год поступления) для плана</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Plan_Year (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>FK_Plan</code> → <code>Educ_Plan.PrK_Plan</code></li>
+                        <li><code>Year_Enter</code></li>
+                    </ul>
+                    <p><strong>Джойны:</strong></p>
+                    <pre><code>SELECT pye.Year_Enter
+FROM Plan_Year_Enter pye
+WHERE pye.NFirm = @Nfirm AND pye.FK_Plan = @PlanID;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Subject_Name_Order (SNO)</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Позиции дисциплин внутри плана</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Subject_Order (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>FK_Plan</code> → <code>Educ_Plan</code></li>
+                        <li><code>FK_Subject_Name</code> → <code>Subject_Name.PrK_Subject_Name</code></li>
+                        <li><code>Sub_NFirm</code> (владелец словаря предметов)</li>
+                        <li>доп. признаки (<code>Sup_Property</code>)</li>
+                    </ul>
+                    <p><strong>Джойны:</strong></p>
+                    <pre><code>SELECT sno.PrK_Subject_Order, sn.Full_Subject_Name
+FROM Subject_Name_Order sno
+JOIN Subject_Name sn
+  ON sn.PrK_Subject_Name = sno.FK_Subject_Name
+ AND sn.NFirm            = sno.Sub_NFirm
+WHERE sno.FK_Plan = @PlanID AND sno.NFirm = @Nfirm;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Comp_Term (CT)</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Недельная нагрузка предмета для конкретного подплана и семестра</p>
+                    <p><strong>Ключи/поля (основные):</strong></p>
+                    <ul>
+                        <li><code>PrK_Comp_Term (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>CodOrderID</code> → <code>SNO.PrK_Subject_Order</code></li>
+                        <li><code>FK_Sub_Plan</code> → <code>Sub_Plan.PrK_Sub_Plan</code></li>
+                        <li><code>Num_Term</code> (номер семестра)</li>
+                        <li><code>FK_Num_Week</code> (нумерация недель)</li>
+                        <li><code>Beg_Act/End_Act</code> (валидность для набора)</li>
+                        <li>недельные нагрузки: <code>Lect_Load</code>, <code>Sem_Load</code>, <code>Lab_Load</code>, <code>Pract_Load</code>, <code>Quan_Week</code></li>
+                    </ul>
+                    <p><strong>Джойны:</strong></p>
+                    <pre><code>-- Нагрузка по предметам (часов за семестр = недельная * Quan_Week)
+SELECT  sn.Full_Subject_Name,
+        ct.Num_Term,
+        ct.Quan_Week,
+        ct.Lect_Load, ct.Sem_Load, ct.Lab_Load, ct.Pract_Load
+FROM Comp_Term ct
+JOIN Subject_Name_Order sno
+  ON sno.PrK_Subject_Order = ct.CodOrderID
+ AND sno.NFirm             = ct.NFirm
+JOIN Subject_Name sn
+  ON sn.PrK_Subject_Name = sno.FK_Subject_Name
+ AND sn.NFirm            = sno.Sub_NFirm
+WHERE ct.FK_Sub_Plan IN (SELECT sp.PrK_Sub_Plan FROM Sub_Plan sp WHERE sp.FK_Plan = @PlanID)
+  AND (@Num_Term IS NULL OR ct.Num_Term = @Num_Term);</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Sub_Plan</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Подплан (делит студентов на потоки/профили внутри плана)</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Sub_Plan (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>FK_Plan</code> → <code>Educ_Plan.PrK_Plan</code></li>
+                        <li><code>Sub_Plan_Name</code>, <code>Sub_Plan_Num</code>, <code>IsExt</code></li>
+                    </ul>
+                    <p><strong>Джойны:</strong></p>
+                    <pre><code>SELECT sp.PrK_Sub_Plan, sp.Sub_Plan_Name
+FROM Sub_Plan sp
+WHERE sp.FK_Plan = @PlanID AND sp.NFirm = @Nfirm;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Group_Stud</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Учебные группы (привязаны к подплану и году набора)</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Group_Stud (PK)</code></li>
+                        <li><code>NFirm</code>, <code>Owner</code></li>
+                        <li><code>FK_Sub_Plan</code> → <code>Sub_Plan</code></li>
+                        <li><code>FK_Plan_Year</code> → <code>Plan_Year_Enter</code></li>
+                        <li><code>Group_Name</code></li>
+                    </ul>
+                    <p><strong>Джойны:</strong></p>
+                    <pre><code>SELECT gs.PrK_Group_Stud, gs.Group_Name
+FROM Group_Stud gs
+JOIN Plan_Year_Enter pye ON pye.PrK_Plan_Year = gs.FK_Plan_Year AND pye.NFirm = gs.NFirm
+WHERE gs.FK_Sub_Plan IN (SELECT PrK_Sub_Plan FROM Sub_Plan WHERE FK_Plan = @PlanID);</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Entrant</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Студент (зачисленный в группу)</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Entrant (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>FK_Person</code></li>
+                        <li><code>FK_Group_Stud</code> → <code>Group_Stud.PrK_Group_Stud</code></li>
+                        <li><code>Owner_Group</code>, <code>FK_Spec</code> и др.</li>
+                    </ul>
+                </div>
+
+                <div class="table-card">
+                    <h3>Status</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Статусы студента. Последняя запись по дате — актуальный статус</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Status (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>FK_Entrant</code> → <code>Entrant.PrK_Entrant</code></li>
+                        <li><code>FK_Status_Type</code>, <code>Status_Date</code></li>
+                    </ul>
+                    <p><span class="badge badge-warning">Актуальные статусы:</span> <code>1, 2, 3, 4, 5, 9</code></p>
+                    <p><strong>Шаблон определения актуальных студентов подплана:</strong></p>
+                    <pre><code>WITH last_status AS (
+  SELECT s.FK_Entrant,
+         ROW_NUMBER() OVER (PARTITION BY s.FK_Entrant ORDER BY s.Status_Date DESC, s.PrK_Status DESC) AS rn,
+         s.FK_Status_Type
+  FROM dbo.Status s
+)
+SELECT sp.PrK_Sub_Plan, sp.Sub_Plan_Name, COUNT(*) AS Studs
+FROM Sub_Plan sp
+JOIN Group_Stud gs ON gs.FK_Sub_Plan = sp.PrK_Sub_Plan AND gs.NFirm = sp.NFirm
+JOIN Entrant en    ON en.FK_Group_Stud = gs.PrK_Group_Stud AND en.NFirm = gs.NFirm
+JOIN last_status ls ON ls.FK_Entrant = en.PrK_Entrant AND ls.rn = 1 AND ls.FK_Status_Type IN (1,2,3,4,5,9)
+WHERE sp.FK_Plan = @PlanID
+GROUP BY sp.PrK_Sub_Plan, sp.Sub_Plan_Name;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Subject_Name</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Словарь дисциплин</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Subject_Name (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>Full_Subject_Name</code>, <code>Subject_Engl_Name</code></li>
+                    </ul>
+                </div>
+
+                <div class="table-card">
+                    <h3>Graph</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Календарная сетка плана по семестрам</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Graph (PK)</code></li>
+                        <li><code>NFirm</code></li>
+                        <li><code>FK_Week</code> → <code>Num_Week.PrK_Week</code></li>
+                        <li><code>FK_Term_Grad</code>, <code>FK_Educ_Stage</code></li>
+                        <li><code>Term</code> (сквозной номер семестра), <code>Course</code></li>
+                        <li><code>Duration</code> (недель)</li>
+                        <li><code>FK_Plan</code> → <code>Educ_Plan.PrK_Plan</code></li>
+                        <li><code>Num_Stage</code></li>
+                    </ul>
+                    <p class="info-box"><strong>Сопоставление с Comp_Term:</strong> <code>Graph.Duration</code> ожидаемо равно <code>Comp_Term.Quan_Week</code> для соответствующего <code>Term=Num_Term</code></p>
+                    <p><strong>Проверка:</strong></p>
+                    <pre><code>SELECT g.FK_Plan, g.Term, g.Duration AS GraphWeeks, ct.Quan_Week AS CTWeeks,
+       COUNT(*) AS Items
+FROM Graph g
+JOIN Comp_Term ct
+  ON ct.NFirm = g.NFirm
+ AND ct.Num_Term = g.Term
+JOIN Subject_Name_Order sno
+  ON sno.PrK_Subject_Order = ct.CodOrderID
+ AND sno.NFirm             = ct.NFirm
+WHERE g.FK_Plan = @PlanID
+GROUP BY g.FK_Plan, g.Term, g.Duration, ct.Quan_Week;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>Num_Week</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Справочник недель учебного года</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><code>PrK_Week (PK)</code></li>
+                        <li><code>Date_Week</code> (часто хранится в формате <code>dd.mm</code> или строковом виде)</li>
+                        <li><code>Num_Week</code></li>
+                    </ul>
+                    <p>Применяется для привязки календаря в <code>Graph</code> и <code>Comp_Term</code> (через <code>FK_Num_Week</code>).</p>
+                </div>
+
+                <div class="table-card">
+                    <h3>Type_Business / Form_Education</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Уровни/виды образования и формы обучения</p>
+                    <p><strong>Ключи/поля:</strong></p>
+                    <ul>
+                        <li><strong>Type_Business:</strong> <code>PrK_Type (PK)</code>, <code>Name_Type</code>, <code>Short_Name_Type</code> (напр.: «основное отделение», «магистратура» и т.п.)</li>
+                        <li><strong>Form_Education:</strong> <code>PrK_Form_Educ (PK)</code>, <code>Name_Form_Educ</code>, <code>Short_Name_Form</code> (очная/заочная и пр.)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="queries">
+                <h2><span class="icon icon-bolt"></span>Типовые задачи и запросы</h2>
+
+                <div class="table-card">
+                    <h3>1) Активные планы на учебный год</h3>
+                    <p class="info-box">
+                        <strong>Логика:</strong> у плана есть хотя бы один подплан с активными студентами 
+                        и есть <code>Comp_Term</code> для семестров этого учебного года.
+                    </p>
+                    <pre><code>-- Псевдо: пользуйтесь Plan_Year_Enter.Year_Enter и формулой семестра по курсу</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>2) Дисциплины и нагрузка для плана/семестра</h3>
+                    <pre><code>SELECT sn.Full_Subject_Name,
+       ct.Num_Term,
+       Hours_Lect  = ct.Lect_Load  * ct.Quan_Week,
+       Hours_Sem   = ct.Sem_Load   * ct.Quan_Week,
+       Hours_Lab   = ct.Lab_Load   * ct.Quan_Week,
+       Hours_Pract = ct.Pract_Load * ct.Quan_Week
+FROM Comp_Term ct
+JOIN Subject_Name_Order sno ON sno.PrK_Subject_Order = ct.CodOrderID AND sno.NFirm = ct.NFirm
+JOIN Subject_Name sn        ON sn.PrK_Subject_Name   = sno.FK_Subject_Name AND sn.NFirm = sno.Sub_NFirm
+WHERE ct.FK_Sub_Plan IN (SELECT PrK_Sub_Plan FROM Sub_Plan WHERE FK_Plan = @PlanID)
+  AND ct.Num_Term = @Num_Term;</code></pre>
+                </div>
+
+                <div class="table-card">
+                    <h3>3) Группы и численность по подпланам</h3>
+                    <p>См. пример с <code>last_status</code> выше; считает только студентов с актуальными «учебными» статусами.</p>
+                </div>
+
+                <div class="table-card">
+                    <h3>4) Получение нагрузки по дисциплинам — процедура am_GetSubjLoads_v2</h3>
+                    <p><span class="badge badge-primary">Назначение:</span> Вернуть перечень дисциплин и часовую нагрузку по видам занятий за один семестр для указанного учебного плана. Результат формируется в разрезе подпланов (Sub_Plan) с возможностью фильтра по конкретному подплану.</p>
+                    
+                    <p><strong>Входные параметры:</strong></p>
+                    <ul>
+                        <li><code>@PlanID INT</code> — Educ_Plan.PrK_Plan</li>
+                        <li><code>@Year_Study INT</code> — год начала учебного года (например, 2025 для 2025/26)</li>
+                        <li><code>@Course INT</code> — курс (≥ 1)</li>
+                        <li><code>@Semester INT</code> — 1 = осенний, 2 = весенний</li>
+                        <li><code>@SubPlanID INT = NULL</code> — необязательный фильтр по Sub_Plan.PrK_Sub_Plan</li>
+                    </ul>
+
+                    <p><strong>Ключевые вычисления:</strong></p>
+                    <ul>
+                        <li><code>@Num_Term = (@Course - 1) * 2 + @Semester</code> — номер семестра (1..12)</li>
+                        <li><code>@Year_Enter = @Year_Study - (@Course - 1)</code> — год набора для текущего курса</li>
+                        <li>По <code>@PlanID</code> определяется <code>@Nfirm</code> (фирма/факультет)</li>
+                        <li>Проверяется наличие записи в <code>Plan_Year_Enter</code> для пары (<code>@PlanID</code>, <code>@Nfirm</code>, <code>@Year_Enter</code>). Если нет — ошибка</li>
+                    </ul>
+
+                    <p><strong>Полный код процедуры:</strong></p>
+                    <pre><code>ALTER   PROC [dbo].[am_GetSubjLoads_v2]
+    @PlanID     INT,   -- Educ_Plan.PrK_Plan
+    @Year_Study INT,   -- год начала учебного года (например, 2025 для 2025/26)
+    @Course     INT,   -- курс (1..)
+    @Semester   INT,   -- 1 = осень, 2 = весна
+    @SubPlanID  INT = NULL  -- опционально: конкретный подплан (Sub_Plan.PrK_Sub_Pлан); NULL = показать все подпланы
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @Course < 1
+        THROW 50001, N'@Course должен быть ≥ 1', 1;
+
+    IF @Semester NOT IN (1, 2)
+        THROW 50002, N'@Semester должен быть 1 или 2', 1;
+
+    DECLARE @Nfirm INT;
+    SELECT @Nfirm = ep.Nfirm
+    FROM dbo.Educ_Plan ep
+    WHERE ep.PrK_Plan = @PlanID;
+
+    IF @Nfirm IS NULL
+        THROW 50003, N'План с указанным @PlanID не найден', 1;
+
+    -- Преобразование «учебный год + курс + семестр» в параметры отбора Comp_Term
+    DECLARE @Num_Term   INT = (@Course - 1) * 2 + @Semester;  -- 1..12
+    DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);    -- год набора для текущего курса
+
+    /* 
+       Жёстко привяжем план к набору через Plan_Year_Enter, чтобы отобрать только
+       те планы, которые действительно запускались в этот набор.
+       Если в некоторых НФ есть планы без записи в Plan_Year_Enter на заданный год,
+       можно поменять JOIN на LEFT JOIN и условие перенести в WHERE IS NOT NULL при необходимости.
+    */
+    IF NOT EXISTS (
+        SELECT 1
+        FROM dbo.Plan_Year_Enter pye
+        WHERE pye.Nfirm = @Nfirm
+          AND pye.FK_Plan = @PlanID
+          AND pye.Year_Enter = @Year_Enter
+    )
+    BEGIN
+        -- По ситуации можно вернуть пустой набор без ошибки.
+        -- RAISERROR тут не бросаем, чтобы вызывающая сторона могла корректно обработать «нет данных».
+        THROW 50004, N'нет данных', 1;
+    END
+
+    SELECT
+        sp.PrK_Sub_Plan                  AS Sub_Plan_ID,
+        sp.Sub_Plan_Name                 AS Sub_Plan_Name,
+        sn.PrK_Subject_Name              AS Subject_ID,
+        sn.Full_Subject_Name             AS Subject_Name,
+        ct.Num_Term,
+        ct.Quan_Week,
+        -- часы за семестр по видам
+        SUM(ct.Quan_Week * ISNULL(ct.Lect_Load,  0)) AS Lect_Hours,
+        SUM(ct.Quan_Week * ISNULL(ct.Sem_Load,   0)) AS Sem_Hours,
+        SUM(ct.Quan_Week * ISNULL(ct.Lab_Load,   0)) AS Lab_Hours,
+        SUM(ct.Quan_Week * ISNULL(ct.Pract_Load, 0)) AS Pract_Hours,
+        -- при необходимости — индивидуальная работа (без умножения на недели, как в типовой модели)
+        SUM(ISNULL(ct.Ind_Load, 0))                 AS Ind_Hours,
+        -- всего аудиторных часов
+        SUM(ct.Quan_Week * ( ISNULL(ct.Lect_Load,0)
+                           + ISNULL(ct.Sem_Load,0)
+                           + ISNULL(ct.Lab_Load,0)
+                           + ISNULL(ct.Pract_Load,0))) AS Total_Aud_Hours
+    FROM dbo.Subject_Name_Order sno
+    JOIN dbo.Subject_Name sn
+      ON sn.PrK_Subject_Name = sno.FK_Subject_Name
+     AND sn.Nfirm            = sno.Sub_Nfirm
+    JOIN dbo.Comp_Term ct
+      ON ct.Nfirm      = sno.Nfirm
+     AND ct.CodOrderID = sno.PrK_Subject_Order
+     AND ct.Num_Term   = @Num_Term
+     AND ct.Beg_Act   <= @Year_Enter 
+     AND (ct.End_Act = 0 OR ct.End_Act >= @Year_Enter)
+    LEFT JOIN dbo.Sub_Plan sp
+      ON sp.Nfirm        = ct.Nfirm
+     AND sp.PrK_Sub_Plan = ct.FK_Sub_Plan
+    WHERE sno.FK_Plan = @PlanID
+      AND sno.Nfirm  = @Nfirm
+      AND (@SubPlanID IS NULL OR ct.FK_Sub_Plan = @SubPlanID)
+      -- При необходимости можно исключить служебные/внешние компоненты:
+      -- AND (sno.Sup_Property IS NULL OR sno.Sup_Property <> 55)
+      -- AND ISNULL(sp.IsExt, 0) <> 55
+    GROUP BY
+        sp.PrK_Sub_Plan, sp.Sub_Plan_Name,
+        sn.PrK_Subject_Name, sn.Full_Subject_Name,
+        ct.Num_Term, ct.Quan_Week
+    ORDER BY
+        Sub_Plan_Name, Subject_Name;
+END</code></pre>
+                </div>
+            </section>
+
+            <section id="glossary">
+                <h2><span class="icon icon-book"></span>Глоссарий полей (выборочно)</h2>
+                <div class="concept-list">
+                    <ul>
+                        <li><code>Beg_Act/End_Act</code> в <code>Comp_Term</code> — год набора, для которого компонент действителен</li>
+                        <li><code>Sup_Property</code> в <code>Subject_Name_Order</code> — признак служебных/исключаемых дисциплин (например, <code>55</code> — исключать из выборок)</li>
+                        <li><code>IsExt</code> в <code>Sub_Plan</code> — признак «внешнего» подплана (исключать из учебного расписания)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="recommendations">
+                <h2><span class="icon icon-bulb"></span>Рекомендации для агентов n8n</h2>
+                <div class="success-box">
+                    <ul>
+                        <li><span class="icon-check"></span>Всегда фильтруйте по <code>NFirm</code> (факультет), по возможности — по <code>Year_Enter</code> через <code>Plan_Year_Enter</code></li>
+                        <li><span class="icon-check"></span>Для актуальных студентов используйте <strong>последнюю запись</strong> из <code>Status</code> и набор кодов <code>(1,2,3,4,5,9)</code></li>
+                        <li><span class="icon-check"></span>Для расчёта часов за семестр умножайте недельные нагрузки <code>*_Load</code> на <code>Quan_Week</code></li>
+                        <li><span class="icon-check"></span>Для консистентности проверяйте <code>Graph.Duration</code> против <code>Comp_Term.Quan_Week</code> по одинаковому <code>Term/Num_Term</code></li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 NewStud Database Documentation | Система управления расписанием</p>
+        </footer>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Применяем подсветку ко всем блокам code внутри pre
+            document.querySelectorAll('pre code').forEach((block) => {
+                block.classList.add('language-sql');
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
+
+    <style>
+        /* Переопределение стилей highlight.js под нужную цветовую схему */
+        pre code.hljs {
+            background: #ffffff !important;
+            color: #000000 !important;
+        }
+        
+        .hljs-keyword {
+            color: #0000FF !important;
+            font-weight: bold !important;
+        }
+        
+        .hljs-comment {
+            color: #008000 !important;
+        }
+        
+        .hljs-string {
+            color: #FF0000 !important;
+        }
+        
+        .hljs-number {
+            color: #000000 !important;
+        }
+        
+        .hljs-built_in,
+        .hljs-type {
+            color: #0000FF !important;
+        }
+        
+        .hljs-operator {
+            color: #808080 !important;
+        }
+    </style>
+</body>
+</html>
