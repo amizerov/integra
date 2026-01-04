@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewStud: Студенты и группы для предмета</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 1.1em;
+      opacity: 0.95;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    nav {
+      background: #f8f9fa;
+      padding: 20px 40px;
+      border-bottom: 2px solid #e9ecef;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    nav h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    nav a {
+      color: #667eea;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.3s;
+      background: white;
+      border: 1px solid #667eea;
+    }
+
+    nav a:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    h2 {
+      color: #667eea;
+      margin: 40px 0 20px 0;
+      font-size: 2em;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+
+    h3 {
+      color: #764ba2;
+      margin: 30px 0 15px 0;
+      font-size: 1.5em;
+    }
+
+    h4 {
+      color: #555;
+      margin: 20px 0 10px 0;
+      font-size: 1.2em;
+    }
+
+    .concept-list {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .concept-list li {
+      margin: 12px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .concept-list li::before {
+      content: "▶";
+      position: absolute;
+      left: 0;
+      color: #667eea;
+    }
+
+    .concept-list code {
+      background: #e7e9fc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .er-diagram {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+      padding: 25px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 5px solid #fdcb6e;
+    }
+
+    .er-diagram ul {
+      list-style: none;
+    }
+
+    .er-diagram li {
+      margin: 10px 0;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 6px;
+    }
+
+    .table-card {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 25px;
+      margin: 25px 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s;
+    }
+
+    .table-card:hover {
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+      border-color: #667eea;
+    }
+
+    .table-card h3 {
+      margin-top: 0;
+      color: #667eea;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin: 5px 5px 5px 0;
+    }
+
+    .badge-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .badge-info {
+      background: #17a2b8;
+      color: white;
+    }
+
+    .badge-warning {
+      background: #ffc107;
+      color: #333;
+    }
+
+    pre {
+      background: #ffffff;
+      color: #000000;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 15px 0;
+      border: 1px solid #e1e4e8;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      line-height: 1.5;
+    }
+
+    pre code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+      display: block;
+    }
+
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 5px solid #2196F3;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 5px solid #ffc107;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    .success-box {
+      background: #d4edda;
+      border-left: 5px solid #28a745;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    footer {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      vertical-align: middle;
+      position: relative;
+      top: -2px;
+    }
+
+    .icon-database {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+    }
+
+    .icon-doc {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
+      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
+      vertical-align: middle;
+      position: relative;
+      top: -2px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      nav ul {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="icon icon-database"></span>NewStud: Группы и студенты для предмета</h1>
+      <p>Процедура <code>am_GetStudentsAndGroupsForSubject_v1</code></p>
+    </header>
+
+    <nav>
+      <ul>
+        <li><a href="#overview">Описание</a></li>
+        <li><a href="#procedure">Код процедуры</a></li>
+        <li><a href="#call">Как вызывать</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section id="overview">
+        <p class="info-box">
+          <strong><span class="icon-doc"></span>Назначение:</strong> получить <strong>список групп и студентов</strong> для конкретного предмета в заданном учебном плане, курсе и семестре, c учётом «живых» статусов студентов и реальной ситуации с подпланами (точное соответствие подплану или fallback на <strong>общие</strong> группы запуска плана).
+        </p>
+
+        <div class="table-card">
+          <h3>Алгоритм</h3>
+          <div class="concept-list">
+            <ul>
+              <li>Вычислить <code>Num_Term = (Course - 1) * 2 + Semester</code> и <code>Year_Enter = Year_Study - (Course - 1)</code>.</li>
+              <li>Найти запуск плана <code>Plan_Year_Enter</code> для <code>(@Nfirm, @PlanID, @Year_Enter)</code>.</li>
+              <li>Получить множество подпланов предмета в семестре из <code>Comp_Term</code> (валидность по <code>Beg_Act/End_Act</code>).</li>
+              <li>Подобрать группы запуска плана: сначала по найденным подпланам (режим <code>by_subplan</code>), если пусто — взять общие группы запуска (<code>FK_Sub_Plan IS NULL</code>) — режим <code>fallback_common</code>.</li>
+              <li>Вернуть студентов из выбранных групп, у которых <strong>последний</strong> статус в <code>{1,2,3,4,5,9}</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>Возвращаемые поля (сокращённо)</h3>
+          <ul>
+            <li><span class="badge badge-primary">Группы</span> <code>PrK_Group_Stud</code>, <code>Group_Name</code>, <code>FK_Sub_Plan</code>, <code>Sub_Plan_Name</code>, <code>FK_Pлан_Year</code>, <code>Owner</code></li>
+            <li><span class="badge badge-primary">Студенты</span> <code>PrK_Entrant</code>, ФИО из <code>Person</code></li>
+            <li><span class="badge badge-info">Статус</span> <code>Last_Status_Type</code>, <code>Last_Status_Name</code></li>
+            <li><span class="badge badge-warning">Тех. поле</span> <code>Source_Mode</code> = <code>by_subplan</code> | <code>fallback_common</code></li>
+            <li><span class="badge badge-info">Контекст</span> <code>Plan_ID</code>, <code>Subject_ID</code></li>
+          </ul>
+        </div>
+
+        <p class="warning-box">
+          <strong>Примечание:</strong> процедура специально реализует «умный» fallback на общие группы, когда фактические группы набора ещё не размечены по подпланам, хотя предмет в плане привязан к подплану.
+        </p>
+      </section>
+
+      <section id="procedure">
+        <h2>Код процедуры</h2>
+        <pre><code>CREATE OR ALTER PROC dbo.am_GetStudentsAndGroupsForSubject_v1
+  @Nfirm      INT,   -- факультет
+  @PlanID     INT,   -- Educ_Plan.PrK_План
+  @SubjectID  INT,   -- Subject_Name.PrK_Subject_Name
+  @Year_Study INT,   -- год начала учебного года (например, 2025 для 2025/26)
+  @Course     INT,   -- курс (1..)
+  @Semester   INT    -- 1 = осень, 2 = весна
+AS
+BEGIN
+  SET NOCOUNT ON;
+
+  IF @Course &lt; 1 OR @Semester NOT IN (1,2)
+  BEGIN
+    -- Некорректные параметры: вернём пустой набор
+    SELECT TOP (0)
+         CAST(NULL AS INT)  AS Plan_ID,
+         CAST(NULL AS INT)  AS Subject_ID,
+         CAST(NULL AS INT)  AS PrK_Group_Stud,
+         CAST(NULL AS INT)  AS Owner,
+         CAST(NULL AS NVARCHAR(40)) AS Group_Name,
+         CAST(NULL AS INT)  AS FK_Sub_План,
+         CAST(NULL AS NVARCHAR(200)) AS Sub_План_Name,
+         CAST(NULL AS INT)  AS FK_План_Year,
+         CAST(NULL AS INT)  AS PrK_Entrant,
+         CAST(NULL AS NVARCHAR(60)) AS Family,
+         CAST(NULL AS NVARCHAR(60)) AS First_Name,
+         CAST(NULL AS NVARCHAR(60)) AS Second_Name,
+         CAST(NULL AS INT)  AS Last_Status_Type,
+         CAST(NULL AS NVARCHAR(60)) AS Last_Status_Name,
+         CAST(NULL AS NVARCHAR(20)) AS Source_Mode;
+    RETURN;
+  END;
+
+  DECLARE @Num_Term   INT = (@Course - 1) * 2 + @Semester;  -- 1..12
+  DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);
+
+  DECLARE @PYE INT;
+  SELECT @PYE = pye.PrK_План_Year
+  FROM dbo.Plan_Year_Enter pye
+  WHERE pye.NFirm = @Nfirm
+    AND pye.FK_План = @PlanID
+    AND pye.Year_Enter = @Year_Enter;
+
+  IF @PYE IS NULL
+  BEGIN
+    -- План не запускался в этот набор — пусто
+    SELECT TOP (0)
+         CAST(NULL AS INT)  AS Plan_ID,
+         CAST(NULL AS INT)  AS Subject_ID,
+         CAST(NULL AS INT)  AS PrK_Group_Stud,
+         CAST(NULL AS INT)  AS Owner,
+         CAST(NULL AS NVARCHAR(40)) AS Group_Name,
+         CAST(NULL AS INT)  AS FK_Sub_План,
+         CAST(NULL AS NVARCHAR(200)) AS Sub_План_Name,
+         CAST(NULL AS INT)  AS FK_План_Year,
+         CAST(NULL AS INT)  AS PrK_Entrant,
+         CAST(NULL AS NVARCHAR(60)) AS Family,
+         CAST(NULL AS NVARCHAR(60)) AS First_Name,
+         CAST(NULL AS NVARCHAR(60)) AS Second_Name,
+         CAST(NULL AS INT)  AS Last_Status_Type,
+         CAST(NULL AS NVARCHAR(60)) AS Last_Status_Name,
+         CAST(NULL AS NVARCHAR(20)) AS Source_Mode;
+    RETURN;
+  END;
+
+  -- Подпланы предмета в данном семестре (валидные на год набора)
+  IF OBJECT_ID('tempdb..#Subplans') IS NOT NULL DROP TABLE #Subplans;
+  SELECT DISTINCT ct.FK_Sub_План
+  INTO #Subplans
+  FROM dbo.Subject_Name_Order sno
+  JOIN dbo.Comp_Term ct
+    ON ct.NFirm      = sno.NFirm
+   AND ct.CodOrderID = sno.PrK_Subject_Order
+  WHERE sno.NFirm = @Nfirm
+    AND sno.FK_План = @PlanID
+    AND sno.FK_Subject_Name = @SubjectID
+    AND ct.Num_Term = @Num_Term
+    AND ct.Beg_Act &lt;= @Year_Enter
+    AND (ct.End_Act = 0 OR ct.End_Act &gt;= @Year_Enter);
+
+  -- Кандидаты групп
+  IF OBJECT_ID('tempdb..#Groups') IS NOT NULL DROP TABLE #Groups;
+  CREATE TABLE #Groups (
+    Nfirm           INT NOT NULL,
+    PrK_Group_Stud  INT NOT NULL,
+    Owner           INT NOT NULL,
+    FK_Sub_План     INT NULL,
+    FK_Plan_Year    INT NOT NULL,
+    Group_Name      NVARCHAR(40) NOT NULL,
+    Source_Mode     NVARCHAR(20) NOT NULL  -- by_subplan | fallback_common
+  );
+
+  -- 1) Точный режим: группы запуска по найденным подпланам
+  INSERT INTO #Groups (Nfirm, PrK_Group_Stud, Owner, FK_Sub_План, FK_План_Year, Group_Name, Source_Mode)
+  SELECT gs.NFirm, gs.PrK_Group_Stud, gs.Owner, gs.FK_Sub_План, gs.FK_План_Year, gs.Group_Name, N'by_subplan'
+  FROM dbo.Group_Stud gs
+  WHERE gs.NFirm = @Nfirm
+    AND gs.FK_План_Year = @PYE
+    AND gs.FK_Sub_План IS NOT NULL
+    AND EXISTS (SELECT 1 FROM #Subplans s WHERE s.FK_Sub_План = gs.FK_Sub_План);
+
+  -- 2) Fallback: если по подпланам пусто, берём общие группы запуска
+  IF NOT EXISTS (SELECT 1 FROM #Groups)
+  BEGIN
+    INSERT INTO #Groups (Nfirm, PrK_Group_Stud, Owner, FK_Sub_План, FK_План_Year, Group_Name, Source_Mode)
+    SELECT gs.NFirm, gs.PrK_Group_Stud, gs.Owner, gs.FK_Sub_План, gs.FK_План_Year, gs.Group_Name, N'fallback_common'
+    FROM dbo.Group_Stud gs
+    WHERE gs.NFirm = @Nfirm
+      AND gs.FK_План_Year = @PYE
+      AND gs.FK_Sub_План IS NULL;
+  END;
+
+  -- Последний «живой» статус по студенту
+  ;WITH LastStatus AS (
+    SELECT s.FK_Entrant,
+         s.FK_Status_Type,
+         st.Status_Type_Name,
+         ROW_NUMBER() OVER (
+           PARTITION BY s.FK_Entrant
+           ORDER BY s.Status_Date DESC, s.PrK_Status DESC
+         ) AS rn
+    FROM dbo.Status s
+    JOIN dbo.Status_Type st ON st.PrK_Status_Type = s.FK_Status_Type
+    WHERE s.NFirm = @Nfirm
+  )
+  SELECT
+    @PlanID                   AS Plan_ID,
+    @SubjectID                AS Subject_ID,
+    g.PrK_Group_Stud,
+    g.Owner,
+    g.Group_Name,
+    g.FK_Sub_Plan,
+    sp.Sub_План_Name,
+    g.FK_План_Year,
+    e.PrK_Entrant,
+    p.Family,
+    p.First_Name,
+    p.Second_Name,
+    ls.FK_Status_Type     AS Last_Status_Type,
+    ls.Status_Type_Name   AS Last_Status_Name,
+    g.Source_Mode
+  FROM #Groups g
+  JOIN dbo.Entrant e
+    ON e.NFirm = g.NFirm
+   AND e.FK_Group_Stud = g.PrK_Group_Stud
+   AND e.Owner_Group   = g.Owner
+  JOIN LastStatus ls
+    ON ls.FK_Entrant = e.PrK_Entrant
+   AND ls.rn = 1
+   AND ls.FK_Status_Type IN (1,2,3,4,5,9)  -- «живые» статусы
+  JOIN dbo.Person p
+    ON p.PrK_Person = e.FK_Person
+  LEFT JOIN dbo.Sub_Plan sp
+    ON sp.NFirm = g.NFirm
+   AND sp.PrK_Sub_План = g.FK_Sub_План
+  ORDER BY g.Source_Mode, g.Group_Name, p.Family, p.First_Name, p.Second_Name;
+END</code></pre>
+      </section>
+
+      <section id="call">
+        <h2>Как вызывать</h2>
+        <div class="table-card">
+          <pre><code>EXEC dbo.am_GetStudentsAndGroupsForSubject_v1
+   @Nfirm      = 1,
+   @PlanID     = 671,
+   @SubjectID  = 155,   -- например «Алгебра»
+   @Year_Study = 2025,  -- учебный год 2025/26
+   @Course     = 1,
+   @Semester   = 1;</code></pre>
+        </div>
+
+        <div class="table-card">
+          <h3>Ожидаемая логика</h3>
+          <ul>
+            <li>Если в <code>Group_Stud</code> ещё нет групп, размеченных по нужным подпланам предмета, будут строки с <code>Source_Mode = 'fallback_common'</code> — это означает, что подобраны <strong>общие</strong> группы запуска плана.</li>
+            <li>Как только фактическая привязка групп к подпланам появится, вернутся строки с <code>Source_Mode = 'by_subplan'</code>.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation</p>
+    </footer>
+  </div>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('language-sql');
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+
+  <style>
+    /* Переопределение стилей highlight.js под нужную цветовую схему */
+    pre code.hljs {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .hljs-keyword {
+      color: #0000FF !important;
+      font-weight: bold !important;
+    }
+
+    .hljs-comment {
+      color: #008000 !important;
+    }
+
+    .hljs-string {
+      color: #FF0000 !important;
+    }
+
+    .hljs-number {
+      color: #000000 !important;
+    }
+
+    .hljs-built_in,
+    .hljs-type {
+      color: #0000FF !important;
+    }
+
+    .hljs-operator {
+      color: #808080 !important;
+    }
+  </style>
+</body>
+</html>

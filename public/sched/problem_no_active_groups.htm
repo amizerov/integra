@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewStud: Проблема отсутствия активных групп</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 1.1em;
+      opacity: 0.95;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    nav {
+      background: #f8f9fa;
+      padding: 20px 40px;
+      border-bottom: 2px solid #e9ecef;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    nav a {
+      color: #667eea;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.3s;
+      background: white;
+      border: 1px solid #667eea;
+    }
+
+    nav a:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    h2 {
+      color: #667eea;
+      margin: 40px 0 20px 0;
+      font-size: 2em;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+
+    h3 {
+      color: #764ba2;
+      margin: 30px 0 15px 0;
+      font-size: 1.5em;
+    }
+
+    .concept-list {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .concept-list li {
+      margin: 12px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .concept-list li::before {
+      content: "▶";
+      position: absolute;
+      left: 0;
+      color: #667eea;
+    }
+
+    .concept-list code {
+      background: #e7e9fc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .table-card {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 25px;
+      margin: 25px 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s;
+    }
+
+    .table-card:hover {
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+      border-color: #667eea;
+    }
+
+    .table-card h3 {
+      margin-top: 0;
+      color: #667eea;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    pre {
+      background: #ffffff;
+      color: #000000;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 15px 0;
+      border: 1px solid #e1e4e8;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      line-height: 1.5;
+    }
+
+    pre code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+      display: block;
+    }
+
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 5px solid #2196F3;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 5px solid #ffc107;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    .success-box {
+      background: #d4edda;
+      border-left: 5px solid #28a745;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    footer {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      vertical-align: middle;
+      position: relative;
+      top: -2px;
+    }
+
+    .icon-database {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+    }
+
+    .icon-doc {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
+      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
+      vertical-align: middle;
+      position: relative;
+      top: -2px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      nav ul {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><span class="icon icon-database"></span>NewStud: почему «нет активных групп»</h1>
+      <p>Проблема и канонический алгоритм для RAG</p>
+    </header>
+
+    <nav>
+      <ul>
+        <li><a href="#problem">Проблема</a></li>
+        <li><a href="#glossary">Словарь</a></li>
+        <li><a href="#mappings">Соответствия</a></li>
+        <li><a href="#algorithm">Алгоритм</a></li>
+        <li><a href="#sql">Псевдо-SQL</a></li>
+        <li><a href="#edges">Граничные случаи</a></li>
+        <li><a href="#antipatterns">Анти-паттерны</a></li>
+        <li><a href="#indexes">Индексы/кэш</a></li>
+        <li><a href="#example">Пример ответа</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section>
+        <p class="info-box">
+          <strong><span class="icon-doc"></span>О документе:</strong> ниже — формулировка проблемы и «канонический» алгоритм для RAG-системы (retrieval-augmented generation), которая должна уметь находить группы и студентов для конкретного предмета в базе <strong>NewStud</strong>, несмотря на расхождения между учебным планом и заведёнными группами.
+        </p>
+      </section>
+
+      <section id="problem">
+        <h2>Проблема (Problem Statement)</h2>
+
+        <div class="table-card">
+          <p><strong>Даны:</strong> факультет (<code>NFirm</code>), учебный план (<code>Educ_Plan.PrK_Plan</code>), учебный год начала (<code>Year_Study</code>), курс (<code>Course</code>), семестр (<code>Semester=1|2</code>), предмет (<code>Subject_Name.PrK_Subject_Name</code>).</p>
+          <p style="margin-top: 12px;"><strong>Нужно:</strong> определить «целевую аудиторию» предмета в текущем семестре — то есть:</p>
+          <div class="concept-list">
+            <ul>
+              <li>список подпланов (<code>Sub_Plan</code>), к которым предмет относится в этом семестре по учебному плану;</li>
+              <li>группы (<code>Group_Stud</code>) набора (<code>Plan_Year_Enter</code>) на этот год/курс;</li>
+              <li>студентов (<code>Entrant</code>) из этих групп, с учётом <strong>последнего «живого» статуса</strong> (<code>Status.FK_Status_Type ∈ {1,2,3,4,5,9}</code>).</li>
+            </ul>
+          </div>
+          <p class="warning-box">
+            <strong>Ключевая сложность:</strong> в реальных данных группы набора часто <strong>не привязаны</strong> к подпланам (<code>Group_Stud.FK_Sub_Plan IS NULL</code>), тогда как предмет в <code>Comp_Term</code> привязан <strong>к конкретному подплану</strong>. Это создаёт «разрыв» между планом и фактическими группами.
+          </p>
+        </div>
+      </section>
+
+      <section id="glossary">
+        <h2>Мини-словарь</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>NFirm</strong> — факультет.</li>
+              <li><strong>Plan</strong> — <code>Educ_Plan</code>.</li>
+              <li><strong>SubPlan</strong> — <code>Sub_Plan</code> (подплан/поток внутри плана).</li>
+              <li><strong>Plan_Year_Enter</strong> — запуск плана для конкретного года набора (<code>Year_Enter</code>).</li>
+              <li><strong>Comp_Term</strong> — компоненты плана по семестрам (<code>Num_Term</code>), несут нагрузки и ссылку на подплан (<code>FK_Sub_Plan</code>).</li>
+              <li><strong>Group_Stud</strong> — группы студентов в рамках конкретного запуска плана; могут иметь <code>FK_Sub_Plan</code> или быть общими (<code>NULL</code>).</li>
+              <li><strong>Entrant</strong> — студент, привязанный к группе (<code>FK_Group_Stud</code>, <code>Owner_Group</code>).</li>
+              <li><strong>Status</strong> — история статусов; нужен <strong>последний</strong> статус из набора «живых».</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="mappings">
+        <h2>Данные и соответствия</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Семестр в терминах <code>Comp_Term</code>: <code>Num_Term = (Course - 1) * 2 + Semester</code> (1..12).</li>
+              <li>Год набора, соответствующий заданным <code>Year_Study</code>, <code>Course</code>: <code>Year_Enter = Year_Study - (Course - 1)</code>.</li>
+              <li>Связь плана и запуска: <code>Plan_Year_Enter (NFirm, FK_Plan, Year_Enter)</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="algorithm">
+        <h2>Канонический алгоритм (для retrieval-шага RAG)</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>Определить</strong> <code>Num_Term</code> и <code>Year_Enter</code> по входным <code>Year_Study</code>, <code>Course</code>, <code>Semester</code>.</li>
+              <li><strong>Убедиться, что план запущен:</strong> найти <code>Plan_Year_Enter</code> по <code>NFirm = :nfirm AND FK_Plan = :planId AND Year_Enter = :yearEnter</code>. Если записи нет — данных для этого набора/курса/семестра не существует.</li>
+              <li><strong>Найти подпланы предмета</strong> в этом семестре по плану: из <code>Subject_Name_Order (sno)</code> и <code>Comp_Term (ct)</code> с фильтрами <code>ct.Num_Term = :numTerm</code> и валидностью <code>ct.Beg_Act</code>/<code>ct.End_Act</code>, получить множество <code>FK_Sub_Plan</code>.</li>
+              <li><strong>Найти группы запуска плана:</strong>
+                сначала точные (<code>FK_Sub_Plan IN (:subplans)</code>), затем fallback на общие (<code>FK_Sub_Plan IS NULL</code>), если точных нет или подпланов нет.</li>
+              <li><strong>Отфильтровать «живых» студентов:</strong> взять последний статус по каждому <code>Entrant</code> и оставить только <code>FK_Status_Type IN (1,2,3,4,5,9)</code>.</li>
+              <li><strong>Вернуть:</strong> <code>Sub_Plan</code> (если есть), <code>Group_Stud</code>, список <code>Entrant</code> (ФИО из <code>Person</code>), опционально флаг источника (точный подплан или общий) для объяснимости.</li>
+            </ul>
+          </div>
+          <p class="info-box" style="margin-top: 18px;">
+            <strong>Зачем fallback:</strong> он закрывает реальный кейс, когда предмет в <code>Comp_Term</code> уже «раскидан» по подпланам, а группы набора ещё не размечены по подпланам и заведены как общие.
+          </p>
+        </div>
+      </section>
+
+      <section id="sql">
+        <h2>Псевдо-SQL (шаблоны для поиска)</h2>
+
+        <div class="table-card">
+          <h3>Подпланы предмета</h3>
+          <pre><code>-- inputs: @Nfirm, @PlanID, @SubjectID, @Num_Term, @Year_Enter
+SELECT DISTINCT ct.FK_Sub_Plan
+FROM Subject_Name_Order sno
+JOIN Comp_Term ct
+  ON ct.NFirm      = sno.NFirm
+ AND ct.CodOrderID = sno.PrK_Subject_Order
+WHERE sno.NFirm = @Nfirm
+  AND sno.FK_Plan = @PlanID
+  AND sno.FK_Subject_Name = @SubjectID
+  AND ct.Num_Term = @Num_Term
+  AND ct.Beg_Act &lt;= @Year_Enter
+  AND (ct.End_Act = 0 OR ct.End_Act &gt;= @Year_Enter);</code></pre>
+        </div>
+
+        <div class="table-card">
+          <h3>Группы запуска (точные → потом общий fallback)</h3>
+          <pre><code>-- exact
+SELECT gs.*
+FROM Group_Stud gs
+WHERE gs.NFirm=@Nfirm
+  AND gs.FK_Plan_Year=@PYE
+  AND gs.FK_Sub_Plan IN (SELECT FK_Sub_Plan FROM #Subplans WHERE FK_Sub_Plan IS NOT NULL);
+
+-- fallback
+SELECT gs.*
+FROM Group_Stud gs
+WHERE gs.NFirm=@Nfirm
+  AND gs.FK_Plan_Year=@PYE
+  AND gs.FK_Sub_Plan IS NULL;</code></pre>
+        </div>
+
+        <div class="table-card">
+          <h3>Последний «живой» статус</h3>
+          <pre><code>;WITH LastStatus AS (
+  SELECT s.FK_Entrant, s.FK_Status_Type,
+     ROW_NUMBER() OVER (
+       PARTITION BY s.FK_Entrant
+       ORDER BY s.Status_Date DESC, s.PrK_Status DESC
+     ) rn
+  FROM Status s
+  WHERE s.NFirm=@Nfirm
+)
+SELECT *
+FROM LastStatus
+WHERE rn=1 AND FK_Status_Type IN (1,2,3,4,5,9);</code></pre>
+        </div>
+      </section>
+
+      <section id="edges">
+        <h2>Типовые граничные случаи</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>Нет Plan_Year_Enter</strong> для (<code>NFirm</code>, <code>PlanID</code>, <code>Year_Enter</code>): план не запускался в этот набор. Возвращать пустой результат с пояснением.</li>
+              <li><strong>Comp_Term указывает подплан, а групп с таким подпланом нет</strong> (самая частая ситуация на 1-м курсе): fallback на общие группы запуска (<code>FK_Sub_Plan IS NULL</code>).</li>
+              <li><strong>Comp_Term без подплана</strong> (<code>FK_Sub_Plan IS NULL</code>): искать только общие группы запуска.</li>
+              <li><strong>Статусы студентов не «живые» или отсутствуют:</strong> такие записи исключаются из аудитории.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="antipatterns">
+        <h2>Анти-паттерны (чего избегать)</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Фильтровать <code>Group_Stud</code> <strong>только</strong> по подпланам без fallback — приведёт к пустым спискам, хотя заниматься нужно.</li>
+              <li>Игнорировать валидность компонента по году набора (<code>ct.Beg_Act/End_Act</code>) и попадание семестра (<code>Num_Term</code>).</li>
+              <li>Не проверять «живость» последнего статуса — приведёт к включению отчисленных/окончивших.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="indexes">
+        <h2>Что можно индексировать/кэшировать (для RAG подсказок)</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Фильтры часто идут по <code>(NFirm, FK_Plan, Year_Enter)</code> и <code>(NFirm, FK_Plan_Year)</code>; полезны составные индексы в <code>Plan_Year_Enter</code>, <code>Group_Stud</code>.</li>
+              <li>Для статусов — индекс по <code>(NFirm, FK_Entrant, Status_Date DESC)</code> ускорит выбор последнего статуса.</li>
+              <li>Для «учебной логики» — индекс по <code>Comp_Term (NFirm, CodOrderID, Num_Term, Beg_Act, End_Act)</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="example">
+        <h2>Краткий ответ модели (пример)</h2>
+        <div class="success-box">
+          <p>«Для предмета <code>155</code> по плану <code>671</code> на <code>1</code> курсе, семестр <code>1</code> (2025/26) <code>Comp_Term</code> указывает подплан <code>2470</code>, но группы набора-2025 заведены как общие (<code>FK_Sub_Plan IS NULL</code>). Поэтому аудиторию формируем из групп <code>Plan_Year_Enter=6855</code> с <code>FK_Sub_Plan IS NULL</code>, отфильтровав студентов по последнему «живому» статусу.»</p>
+        </div>
+
+        <div class="table-card">
+          <h3>Что это даёт RAG-агенту</h3>
+          <div class="concept-list">
+            <ul>
+              <li>Корректно объясняет «почему пусто» и что делать (fallback).</li>
+              <li>Возвращает осмысленные списки даже при неполной разметке подпланов.</li>
+              <li>Устойчив к ключевым аномалиям данных, типичным на первых курсах.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation</p>
+    </footer>
+  </div>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('language-sql');
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+
+  <style>
+    /* Переопределение стилей highlight.js под нужную цветовую схему */
+    pre code.hljs {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .hljs-keyword {
+      color: #0000FF !important;
+      font-weight: bold !important;
+    }
+
+    .hljs-comment {
+      color: #008000 !important;
+    }
+
+    .hljs-string {
+      color: #FF0000 !important;
+    }
+
+    .hljs-number {
+      color: #000000 !important;
+    }
+
+    .hljs-built_in,
+    .hljs-type {
+      color: #0000FF !important;
+    }
+
+    .hljs-operator {
+      color: #808080 !important;
+    }
+  </style>
+</body>
+</html>
+
