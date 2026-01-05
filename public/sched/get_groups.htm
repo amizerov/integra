@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NewStud: SQL — группы и число активных студентов</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-database"></span>Группы и активные студенты</h1>
+      <p>T‑SQL шаблон: группы и число «живых» студентов (NewStud)</p>
+    </header>
+
+    <nav>
+      <ul>
+        <li><a href="#purpose">Назначение</a></li>
+        <li><a href="#params">Параметры</a></li>
+        <li><a href="#logic">Логика</a></li>
+        <li><a href="#sql">SQL</a></li>
+        <li><a href="#tables">Таблицы</a></li>
+        <li><a href="#active">Активные статусы</a></li>
+        <li><a href="#debug">Отладка</a></li>
+        <li><a href="#perf">Индексы</a></li>
+        <li><a href="#extensions">Расширения</a></li>
+        <li><a href="#check">Проверка</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section>
+        <p class="info-box">
+          Документ для RAG-агентов: универсальный запрос для базы <strong>NewStud</strong> (MS SQL Server), который возвращает <strong>список учебных групп</strong> и <strong>число “активных” студентов</strong> при заданных параметрах: <code>NFirm</code>, план, учебный год, курс и семестр.
+        </p>
+      </section>
+
+      <section id="purpose">
+        <h2>Назначение</h2>
+        <div class="table-card">
+          <p>
+            Получить актуальные группы набора для выбранных <strong>учебного года</strong> и <strong>курса</strong>, и посчитать по каждой группе количество студентов, чей <strong>последний статус</strong> является «живым».
+          </p>
+          <p class="warning-box" style="margin-top: 18px;">
+            <strong>Примечание:</strong> семестр <code>@Semester</code> обычно не влияет на состав групп, но включён в выдачу как контекст (удобно для трассировки сценариев).
+          </p>
+        </div>
+      </section>
+
+      <section id="params">
+        <h2>Параметры</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><code>@Nfirm INT</code> — идентификатор факультета (<code>Firm.NFirm</code>).</li>
+              <li><code>@PlanID INT</code> — идентификатор учебного плана (<code>Educ_Plan.PrK_Plan</code>).</li>
+              <li><code>@Year_Study INT</code> — год начала учебного года (например, 2025 для 2025/26).</li>
+              <li><code>@Course INT</code> — курс обучения (1..N).</li>
+              <li><code>@Semester INT</code> — семестр (1=осень, 2=весна).</li>
+            </ul>
+          </div>
+
+          <h3>Производные параметры</h3>
+          <div class="concept-list">
+            <ul>
+              <li><code>@Year_Enter = @Year_Study - (@Course - 1)</code> — вычисляемый год набора, соответствующий выбранному курсу.</li>
+              <li><code>@Plan_Year_Enter</code> — запись в <code>Plan_Year_Enter</code> для (<code>@PlanID</code>, <code>@Year_Enter</code>, <code>@Nfirm</code>).</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="logic">
+        <h2>Логика отбора (пошагово)</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Найти год набора: <code>@Year_Enter = @Year_Study - (@Course - 1)</code>.</li>
+              <li>Проверить наличие записи в <code>Plan_Year_Enter</code> по (<code>Nfirm</code>, <code>PlanID</code>, <code>Year_Enter</code>).</li>
+              <li>Выбрать группы из <code>Group_Stud</code> по найденному <code>FK_Plan_Year</code>.</li>
+              <li>Привязать студентов из <code>Entrant</code> к группам по (<code>NFirm</code>, <code>FK_Group_Stud</code>, <code>Owner_Group</code>).</li>
+              <li>Определить последний статус студента через <code>ROW_NUMBER()</code> по убыванию даты/ключа в <code>Status</code>.</li>
+              <li>Оставить «живые» статусы: <code>FK_Status_Type IN (1,2,3,4,5,9)</code>.</li>
+              <li>Агрегировать число активных студентов по каждой группе; опционально подтянуть <code>Sub_Plan_Name</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="sql">
+        <h2>SQL (готов к копированию)</h2>
+        <div class="table-card">
+          <pre><code>DECLARE 
+    @Nfirm      INT        = 1,     -- факультет (Firm.NFirm)
+    @PlanID     INT        = 671,   -- Educ_Plan.PrK_Plan
+    @Year_Study INT        = 2025,  -- год начала учебного года (например, 2025 для 2025/26)
+    @Course     INT        = 1,     -- курс (1..)
+    @Semester   INT        = 1;     -- 1=осень, 2=весна (на состав групп напрямую не влияет)
+
+-- Год набора для заданного учебного года и курса
+DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);
+
+;WITH PlanYE AS (
+    -- Находим запись план↔год_набора
+    SELECT pye.PrK_Plan_Year
+    FROM dbo.Plan_Year_Enter pye
+    WHERE pye.Nfirm = @Nfirm
+      AND pye.FK_Plan = @PlanID
+      AND pye.Year_Enter = @Year_Enter
+),
+LatestStatus AS (
+    -- Последний статус по каждому студенту
+    SELECT 
+        s.FK_Entrant,
+        s.NFirm,
+        s.FK_Status_Type,
+        s.Status_Date,
+        s.PrK_Status,
+        ROW_NUMBER() OVER (
+            PARTITION BY s.FK_Entrant
+            ORDER BY s.Status_Date DESC, s.PrK_Status DESC
+        ) AS rn
+    FROM dbo.Status s
+),
+ActiveEntrants AS (
+    -- Оставляем только «живые» статусы (учится/активен): 1,2,3,4,5,9
+    SELECT ls.FK_Entrant
+    FROM LatestStatus ls
+    WHERE ls.rn = 1
+      AND ls.FK_Status_Type IN (1,2,3,4,5,9)
+),
+GroupsOnPlanYear AS (
+    -- Группы для найденного план-год-набора (учебные группы текущего набора)
+    SELECT 
+        gs.Nfirm,
+        gs.PrK_Group_Stud,
+        gs.Owner,
+        gs.FK_Sub_Plan,
+        gs.FK_Plan_Year,
+        gs.Group_Name
+    FROM dbo.Group_Stud gs
+    JOIN PlanYE pye
+      ON pye.PrK_Plan_Year = gs.FK_Plan_Year
+    WHERE gs.Nfirm = @Nfirm
+)
+SELECT 
+    g.Nfirm,
+    @PlanID                          AS Plan_ID,
+    @Year_Study                      AS Year_Study,
+    @Course                          AS Course,
+    @Semester                        AS Semester,
+    g.FK_Plan_Year                   AS Plan_Year_Enter_ID,
+    g.PrK_Group_Stud                 AS Group_ID,
+    g.Group_Name,
+    g.FK_Sub_Plan,
+    sp.Sub_Plan_Name,
+    COUNT(e.PrK_Entrant)             AS Student_Count
+FROM GroupsOnPlanYear g
+LEFT JOIN dbo.Sub_Plan sp
+       ON sp.PrK_Sub_Plan = g.FK_Sub_Plan
+      AND sp.Nfirm        = g.Nfirm
+LEFT JOIN dbo.Entrant e
+       ON e.NFirm         = g.Nfirm
+      AND e.FK_Group_Stud = g.PrK_Group_Stud
+      AND e.Owner_Group   = g.Owner
+LEFT JOIN ActiveEntrants ae
+       ON ae.FK_Entrant   = e.PrK_Entrant
+-- Считаем только тех, чьи последние статусы «живые»
+WHERE ae.FK_Entrant IS NOT NULL
+GROUP BY 
+    g.Nfirm, g.FK_Plan_Year, g.PrK_Group_Stud, g.Group_Name, g.FK_Sub_Plan, sp.Sub_Plan_Name
+ORDER BY 
+    g.Group_Name;</code></pre>
+        </div>
+      </section>
+
+      <section id="tables">
+        <h2>Требуемые таблицы и ключевые поля</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><code>Plan_Year_Enter (PrK_Plan_Year, Nfirm, FK_Plan, Year_Enter)</code> — связь плана с годом набора.</li>
+              <li><code>Group_Stud (Nfirm, PrK_Group_Stud, Owner, FK_Plan_Year, FK_Sub_Plan, Group_Name)</code> — группы набора.</li>
+              <li><code>Entrant (PrK_Entrant, NFirm, FK_Group_Stud, Owner_Group, ...)</code> — студенты.</li>
+              <li><code>Status (PrK_Status, FK_Entrant, NFirm, FK_Status_Type, Status_Date, ...)</code> — история статусов.</li>
+              <li><code>Sub_Plan (PrK_Sub_Plan, Nfirm, Sub_Plan_Name, ...)</code> — подпланы.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="active">
+        <h2>Что считается «активным» студентом</h2>
+        <div class="table-card">
+          <p>В расчёт включаются студенты, у которых <strong>последний</strong> статус имеет <code>FK_Status_Type</code> в множестве:</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>1</code> — зачислен</li>
+              <li><code>2</code> — восстановлен</li>
+              <li><code>3</code> — вернулся после перерыва</li>
+              <li><code>4</code> — переведён на курс ниже</li>
+              <li><code>5</code> — переведён на следующий курс</li>
+              <li><code>9</code> — допущен к ИГА</li>
+            </ul>
+          </div>
+          <p class="warning-box" style="margin-top: 18px;">
+            Статусы <code>6</code> (академический отпуск), <code>7</code> (отчислен), <code>8</code> (окончил) — исключаются.
+          </p>
+          <p class="info-box" style="margin-top: 18px;">
+            При необходимости состав «живых» статусов можно параметризовать через таблицу-настройку.
+          </p>
+        </div>
+      </section>
+
+      <section id="debug">
+        <h2>Частые ситуации / отладка</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>Пустой результат:</strong> проверьте запись в <code>Plan_Year_Enter</code> для (<code>@Nfirm</code>, <code>@PlanID</code>, <code>@Year_Enter</code>) и наличие групп в <code>Group_Stud</code> по найденному <code>FK_Plan_Year</code>. Убедитесь, что у студентов есть история статусов и последний статус — активный.</li>
+              <li><strong>Группы без подплана:</strong> <code>FK_Sub_Plan</code> может быть <code>NULL</code> (общая группа набора). Тогда <code>Sub_Plan_Name</code> тоже будет <code>NULL</code> — это нормально.</li>
+              <li><strong>Семестр:</strong> обычно не влияет на состав групп; используется как контекстная метка в выдаче.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="perf">
+        <h2>Производительность и индексы</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><code>Status</code>: индекс на <code>(FK_Entrant, Status_Date DESC, PrK_Status DESC)</code> ускорит выбор «последнего статуса».</li>
+              <li><code>Entrant</code>: индексы по <code>(NFirm, FK_Group_Stud, Owner_Group)</code> и по <code>(PrK_Entrant)</code>.</li>
+              <li><code>Group_Stud</code>: индекс по <code>(FK_Plan_Year, Nfirm)</code>.</li>
+              <li><code>Plan_Year_Enter</code>: индекс по <code>(Nfirm, FK_Plan, Year_Enter)</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="extensions">
+        <h2>Варианты расширения</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Фильтрация по форме обучения/типу (через <code>Educ_Plan</code>) на этапе выбора <code>@PlanID</code>.</li>
+              <li>Настраиваемый набор «живых» статусов (таблица настроек допустимых статусов).</li>
+              <li>Возврат не только количества, но и списка студентов (ФИО, SNILS и т.д.) отдельным запросом/процедурой.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="check">
+        <h2>Проверка / пример</h2>
+        <div class="table-card">
+          <p>Подставьте реальные значения параметров и выполните. Если результат пуст, идите по шагам:</p>
+          <div class="concept-list">
+            <ul>
+              <li>Проверьте <code>Plan_Year_Enter</code> по (<code>@Nfirm</code>, <code>@PlanID</code>, <code>@Year_Enter</code>).</li>
+              <li>Посмотрите группы в <code>Group_Stud</code> по найденному <code>FK_Plan_Year</code>.</li>
+              <li>Убедитесь, что у студентов есть последний «живой» статус.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation</p>
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('language-sql');
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+</body>
+</html>

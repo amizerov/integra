@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NewStud: SQL — инспекторы с «живыми» студентами</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-database"></span>Инспекторы с активными студентами</h1>
+      <p>Как получить <code>Union_Insp.Insp_Code</code> для факультета (NewStud)</p>
+    </header>
+
+    <nav>
+      <ul>
+        <li><a href="#terms">Термины</a></li>
+        <li><a href="#nfirm">NFirm</a></li>
+        <li><a href="#oneoff">Разовый запрос</a></li>
+        <li><a href="#proc">Процедура</a></li>
+        <li><a href="#why">Почему так</a></li>
+        <li><a href="#edge">Тонкости</a></li>
+        <li><a href="#perf">Производительность</a></li>
+        <li><a href="#check">Быстрая проверка</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section>
+        <p class="info-box">
+          Этот гид описывает устойчивый способ получить <strong>инспектора</strong> (<code>Union_Insp.Insp_Code</code>), связанного с наборами факультета через <code>Plan_Year_Enter.FK_Insp</code>, <strong>только если у набора есть активные студенты</strong>.
+          Под «живыми» понимаются студенты, у которых <strong>последний</strong> статус в <code>Status</code> входит в набор: <code>1, 2, 3, 4, 5, 9</code>.
+        </p>
+        <p class="warning-box">
+          Используется Microsoft SQL Server. Запросы ориентированы на схему БД <em>NewStud</em>.
+        </p>
+      </section>
+
+      <section id="terms">
+        <h2>1) Термины и ключевые таблицы</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>Факультет</strong> — <code>Firm</code>, где <code>FK_Type_Firm = 3</code>. Идентификатор: <code>Firm.NFirm</code>.</li>
+              <li><strong>Набор</strong> — <code>Plan_Year_Enter</code>, привязка к инспектору через <code>FK_Insp</code> (код из <code>Union_Insp.Insp_Code</code>).</li>
+              <li><strong>Группа</strong> — <code>Group_Stud</code>, связана с набором через <code>FK_Plan_Year</code>.</li>
+              <li><strong>Студент</strong> — <code>Entrant</code>, связь с группой по (<code>FK_Group_Stud</code>, <code>Owner_Group</code>, <code>NFirm</code>).</li>
+              <li><strong>Статусы студента</strong> — <code>Status</code>. Нужен <strong>последний</strong> по дате/ключу.</li>
+              <li><strong>Инспектор</strong> — <code>Union_Insp</code>, поле <code>Insp_Code</code>.</li>
+            </ul>
+          </div>
+          <p class="info-box" style="margin-top: 18px;">
+            <strong>Активные статусы</strong>: <code>1</code> (зачислен), <code>2</code> (восстановлен), <code>3</code> (вернулся), <code>4</code> (переведен на курс ниже), <code>5</code> (переведен на следующий курс), <code>9</code> (допущен к ИГА).
+          </p>
+        </div>
+      </section>
+
+      <section id="nfirm">
+        <h2>2) Как получить NFirm факультета (пример для мехмата)</h2>
+        <div class="table-card">
+          <p>Если вы не уверены в идентификаторе факультета:</p>
+          <pre><code>SELECT Nfirm, Firm_Name
+FROM dbo.Firm
+WHERE FK_Type_Firm = 3  -- факультеты
+  AND Firm_Name LIKE N'%механико-математичес%';
+-- Часто мехмат = NFirm = 1</code></pre>
+        </div>
+      </section>
+
+      <section id="oneoff">
+        <h2>3) Разовый запрос: инспектора с «живыми» студентами по факультету</h2>
+        <div class="table-card">
+          <p>
+            Запрос ищет <strong>инспекторов</strong> для факультета <code>@Nfirm</code>, у которых по привязанным наборам есть <strong>активные студенты</strong> (по последнему статусу).
+          </p>
+          <pre><code>DECLARE @Nfirm INT = 1;  -- мехмат
+
+;WITH LastStatus AS (
+    SELECT s.FK_Entrant,
+           s.FK_Status_Type,
+           ROW_NUMBER() OVER (
+               PARTITION BY s.FK_Entrant
+               ORDER BY s.Status_Date DESC, s.PrK_Status DESC
+           ) AS rn
+    FROM dbo.Status s
+    WHERE s.NFirm = @Nfirm
+),
+ActiveEntrants AS (
+    SELECT e.PrK_Entrant,
+           pye.FK_Insp
+    FROM dbo.Plan_Year_Enter pye
+    JOIN dbo.Group_Stud gs
+      ON gs.NFirm = pye.NFirm
+     AND gs.FK_Plan_Year = pye.PrK_Plan_Year
+    JOIN dbo.Entrant e
+      ON e.NFirm = gs.NFirm
+     AND e.FK_Group_Stud = gs.PrK_Group_Stud
+     AND e.Owner_Group  = gs.Owner
+    JOIN LastStatus ls
+      ON ls.FK_Entrant = e.PrK_Entrant
+     AND ls.rn = 1
+     AND ls.FK_Status_Type IN (1,2,3,4,5,9)  -- активные/обучающиеся
+    WHERE pye.NFirm = @Nfirm
+)
+SELECT ui.Insp_Code,
+       ui.Union_Name,
+       COUNT(DISTINCT ae.PrK_Entrant) AS ActiveStudents
+FROM ActiveEntrants ae
+JOIN dbo.Union_Insp ui
+  ON ui.Insp_Code = ae.FK_Insp
+GROUP BY ui.Insp_Code, ui.Union_Name
+ORDER BY ActiveStudents DESC, ui.Union_Name;</code></pre>
+          <p class="info-box" style="margin-top: 18px;">
+            <strong>Результат:</strong> список инспекторов и количество «живых» студентов, привязанных к их наборам внутри факультета.
+          </p>
+        </div>
+      </section>
+
+      <section id="proc">
+        <h2>4) Обернуть в хранимую процедуру</h2>
+        <div class="table-card">
+          <p>Процедура с опциональной фильтрацией по году набора <code>@Year_Enter</code>:</p>
+          <pre><code>CREATE OR ALTER PROC dbo.am_GetInspectorsWithActiveStudents
+    @Nfirm INT,
+    @Year_Enter INT = NULL   -- опционально: ограничить конкретным набором
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH LastStatus AS (
+        SELECT s.FK_Entrant,
+               s.FK_Status_Type,
+               ROW_NUMBER() OVER (
+                   PARTITION BY s.FK_Entrant
+                   ORDER BY s.Status_Date DESC, s.PrK_Status DESC
+               ) AS rn
+        FROM dbo.Status s
+        WHERE s.NFirm = @Nfirm
+    ),
+    ActiveEntrants AS (
+        SELECT e.PrK_Entrant,
+               pye.FK_Insp
+        FROM dbo.Plan_Year_Enter pye
+        JOIN dbo.Group_Stud gs
+          ON gs.NFirm = pye.NFirm
+         AND gs.FK_Plan_Year = pye.PrK_Plan_Year
+        JOIN dbo.Entrant e
+          ON e.NFirm = gs.NFirm
+         AND e.FK_Group_Stud = gs.PrK_Group_Stud
+         AND e.Owner_Group  = gs.Owner
+        JOIN LastStatus ls
+          ON ls.FK_Entrant = e.PrK_Entrant
+         AND ls.rn = 1
+         AND ls.FK_Status_Type IN (1,2,3,4,5,9)
+        WHERE pye.NFirm = @Nfirm
+          AND (@Year_Enter IS NULL OR pye.Year_Enter = @Year_Enter)
+    )
+    SELECT ui.Insp_Code,
+           ui.Union_Name,
+           COUNT(DISTINCT ae.PrK_Entrant) AS ActiveStudents
+    FROM ActiveEntrants ae
+    JOIN dbo.Union_Insp ui
+      ON ui.Insp_Code = ae.FK_Insp
+    GROUP BY ui.Insp_Code, ui.Union_Name
+    ORDER BY ActiveStudents DESC, ui.Union_Name;
+END
+GO
+
+-- Примеры вызова:
+EXEC dbo.am_GetInspectorsWithActiveStudents @Nfirm = 1;               -- все наборы
+EXEC dbo.am_GetInspectorsWithActiveStudents @Nfirm = 1, @Year_Enter = 2025;  -- только набор 2025</code></pre>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2>5) Почему фильтр через Plan_Year_Enter корректен</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Привязка инспектора идёт через <strong>набор</strong> (<code>Plan_Year_Enter.FK_Insp</code>), а не напрямую к факультету.</li>
+              <li>Студенты связаны с набором через <code>Plan_Year_Enter → Group_Stud (FK_Plan_Year) → Entrant</code>.</li>
+              <li>Поэтому «инспектора с живыми студентами» корректно считать через цепочку <code>Plan_Year_Enter → Group_Stud → Entrant → Status</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="edge">
+        <h2>6) Тонкости и крайние случаи</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>Общие группы:</strong> если <code>Group_Stud.FK_Sub_Plan</code> = <code>NULL</code>, запрос всё равно корректно учитывает студентов (связь идёт через <code>FK_Plan_Year</code>).</li>
+              <li><strong>Множественные наборы:</strong> процедура позволяет ограничить расчёт конкретным <code>@Year_Enter</code>.</li>
+              <li><strong>Последний статус:</strong> используется <code>ROW_NUMBER()</code> по <code>Status_Date</code> и (на всякий случай) <code>PrK_Status</code>.</li>
+              <li><strong>Нормализация статусов:</strong> убедитесь, что набор активных кодов соответствует вашей локальной политике.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="perf">
+        <h2>7) Производительность</h2>
+        <div class="table-card">
+          <p>Индексы, которые стоит проверить/добавить:</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>Status(FK_Entrant, NFirm, Status_Date DESC, PrK_Status DESC)</code> — покрытие для CTE <code>LastStatus</code>.</li>
+              <li><code>Group_Stud(NFirm, FK_Plan_Year)</code> и <code>Group_Stud(NFirm, PrK_Group_Stud, Owner)</code>.</li>
+              <li><code>Entrant(NFirm, FK_Group_Stud, Owner_Group)</code>.</li>
+              <li><code>Plan_Year_Enter(NFirm, PrK_Plan_Year)</code> и <code>Plan_Year_Enter(NFirm, Year_Enter)</code> при частых фильтрах по году.</li>
+            </ul>
+          </div>
+          <p class="info-box" style="margin-top: 18px;">Если объёмы большие, можно материализовать «последний статус» в отдельной таблице и обновлять инкрементально.</p>
+        </div>
+      </section>
+
+      <section id="check">
+        <h2>8) Быстрая проверка «на глаз»</h2>
+        <div class="table-card">
+          <p>Чтобы прикинуть, есть ли активные студенты у факультета по наборам, сделайте агрегацию по <code>Year_Enter</code>:</p>
+          <pre><code>DECLARE @Nfirm INT = 1;
+
+;WITH LastStatus AS (
+    SELECT s.FK_Entrant,
+           s.FK_Status_Type,
+           ROW_NUMBER() OVER (
+               PARTITION BY s.FK_Entrant
+               ORDER BY s.Status_Date DESC, s.PrK_Status DESC
+           ) AS rn
+    FROM dbo.Status s
+    WHERE s.NFirm = @Nfirm
+)
+SELECT pye.Year_Enter,
+       COUNT(DISTINCT e.PrK_Entrant) AS ActiveStudents
+FROM dbo.Plan_Year_Enter pye
+JOIN dbo.Group_Stud gs
+  ON gs.NFirm = pye.NFirm
+ AND gs.FK_Plan_Year = pye.PrK_Plan_Year
+JOIN dbo.Entrant e
+  ON e.NFirm = gs.NFirm
+ AND e.FK_Group_Stud = gs.PrK_Group_Stud
+ AND e.Owner_Group  = gs.Owner
+JOIN LastStatus ls
+  ON ls.FK_Entrant = e.PrK_Entrant
+ AND ls.rn = 1
+ AND ls.FK_Status_Type IN (1,2,3,4,5,9)
+WHERE pye.NFirm = @Nfirm
+GROUP BY pye.Year_Enter
+ORDER BY pye.Year_Enter DESC;</code></pre>
+          <p class="info-box" style="margin-top: 18px;">
+            Так вы быстро увидите, по каким наборам есть активные студенты, до того как искать конкретных инспекторов.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Контакты и контекст</h2>
+        <div class="table-card">
+          <p>Фрагмент предназначен для использования в RAG‑агентах (n8n/LLM) как «знаниевая карточка» по поиску инспектора/инспекторов с «живыми» студентами для заданного факультета в БД NewStud.</p>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation</p>
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('language-sql');
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+</body>
+</html>

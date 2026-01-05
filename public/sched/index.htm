@@ -4,142 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>NewStud: Документы расписания</title>
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			box-sizing: border-box;
-		}
-
-		body {
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-			line-height: 1.6;
-			color: #333;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			padding: 20px;
-		}
-
-		.container {
-			max-width: 1200px;
-			margin: 0 auto;
-			background: white;
-			border-radius: 12px;
-			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-			overflow: hidden;
-		}
-
-		header {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			padding: 40px;
-			text-align: center;
-		}
-
-		header h1 {
-			font-size: 2.5em;
-			margin-bottom: 10px;
-			font-weight: 700;
-		}
-
-		header p {
-			font-size: 1.1em;
-			opacity: 0.95;
-		}
-
-		.content {
-			padding: 40px;
-		}
-
-		.post-list {
-			list-style: none;
-			margin-top: 10px;
-		}
-
-		.post-list li {
-			padding: 14px 0;
-			border-bottom: 1px solid #e9ecef;
-		}
-
-		.post-list li:last-child {
-			border-bottom: none;
-		}
-
-		.post-list a {
-			color: #667eea;
-			text-decoration: none;
-			font-weight: 700;
-		}
-
-		.post-list a:hover {
-			text-decoration: underline;
-		}
-
-		.post-meta {
-			color: #666;
-			font-size: 0.95em;
-			margin-top: 4px;
-		}
-
-		.post-date {
-			font-variant-numeric: tabular-nums;
-		}
-
-		code {
-			font-family: 'Consolas', 'Courier New', monospace;
-			font-size: 0.9em;
-		}
-
-		footer {
-			background: #2c3e50;
-			color: white;
-			padding: 20px;
-			text-align: center;
-			margin-top: 40px;
-		}
-
-		.icon {
-			display: inline-block;
-			width: 28px;
-			height: 28px;
-			margin-right: 10px;
-			vertical-align: middle;
-			position: relative;
-			top: -2px;
-		}
-
-		.icon-database {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			-webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
-			mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
-		}
-
-		.icon-doc {
-			display: inline-block;
-			width: 20px;
-			height: 20px;
-			margin-right: 8px;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			-webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
-			mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>');
-			vertical-align: middle;
-			position: relative;
-			top: -2px;
-		}
-
-		@media (max-width: 768px) {
-			.container {
-				margin: 10px;
-			}
-
-			.content {
-				padding: 20px;
-			}
-
-			header h1 {
-				font-size: 1.8em;
-			}
-		}
-	</style>
+	<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 	<div class="container">
@@ -153,6 +18,10 @@
 					<a href="newstud_short_descr.htm">NewStud: Схема БД (MS SQL) — Краткое руководство</a>
 					<div class="post-meta"><time class="post-date" datetime="2026-01-04">04.01.2026</time> · База и связи NewStud для RAG</div>
 				</li>
+				<li data-date="2026-01-05">
+					<a href="active_inspectors.htm">SQL: инспекторы с «живыми» студентами</a>
+					<div class="post-meta"><time class="post-date" datetime="2026-01-05">05.01.2026</time> · Как найти инспектора по факультету с активными студентами</div>
+				</li>
 				<li data-date="2026-01-04">
 					<a href="problem_no_active_groups.htm">Проблема: «нет активных групп» — канонический алгоритм (RAG)</a>
 					<div class="post-meta"><time class="post-date" datetime="2026-01-04">04.01.2026</time> · Почему списки пустые и как делать fallback</div>
@@ -164,6 +33,14 @@
 				<li data-date="2026-01-05">
 					<a href="get_plans.htm">SQL: планы и факультеты — шаблоны запросов</a>
 					<div class="post-meta"><time class="post-date" datetime="2026-01-05">05.01.2026</time> · Запросы: список факультетов и активные планы</div>
+				</li>
+				<li class="post" data-date="2026-01-05">
+					<a class="post-link" href="get_groups.htm">Группы и число активных студентов (SQL)</a>
+					<div class="post-meta">
+						<time datetime="2026-01-05">05.01.2026</time>
+						<span class="sep">•</span>
+						<span>Шаблон запроса: группы набора и «живые» статусы</span>
+					</div>
 				</li>
 				<li data-date="2026-01-04">
 					<a href="db_diagram.png">db_diagram.png</a>
