@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NewStud: SQL Guide — планы и факультеты</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 1.1em;
+      opacity: 0.95;
+    }
+
+    .home-link {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+      color: white;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(6px);
+      transition: all 0.2s;
+    }
+
+    .home-link:hover {
+      background: white;
+      color: #667eea;
+      transform: translateY(-1px);
+    }
+
+    .home-link svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    nav {
+      background: #f8f9fa;
+      padding: 20px 40px;
+      border-bottom: 2px solid #e9ecef;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    nav a {
+      color: #667eea;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.3s;
+      background: white;
+      border: 1px solid #667eea;
+    }
+
+    nav a:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    h2 {
+      color: #667eea;
+      margin: 40px 0 20px 0;
+      font-size: 2em;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #667eea;
+    }
+
+    h3 {
+      color: #764ba2;
+      margin: 30px 0 15px 0;
+      font-size: 1.5em;
+    }
+
+    .concept-list {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .concept-list ul {
+      list-style: none;
+    }
+
+    .concept-list li {
+      margin: 12px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .concept-list li::before {
+      content: "▶";
+      position: absolute;
+      left: 0;
+      color: #667eea;
+    }
+
+    .concept-list code {
+      background: #e7e9fc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .table-card {
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 25px;
+      margin: 25px 0;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s;
+    }
+
+    .table-card:hover {
+      box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+      border-color: #667eea;
+    }
+
+    .table-card h3 {
+      margin-top: 0;
+      color: #667eea;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 5px solid #2196F3;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 5px solid #ffc107;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 6px;
+    }
+
+    pre {
+      background: #ffffff;
+      color: #000000;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 15px 0;
+      border: 1px solid #e1e4e8;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      line-height: 1.5;
+    }
+
+    pre code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+      display: block;
+    }
+
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+
+    footer {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      margin-right: 10px;
+      vertical-align: middle;
+      position: relative;
+      top: -2px;
+    }
+
+    .icon-database {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+      mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm6 14c0 .55-2.69 2-6 2s-6-1.45-6-2v-2.23c1.61.78 3.72 1.23 6 1.23s4.39-.45 6-1.23V17zm0-4.55c-1.3.95-3.58 1.55-6 1.55s-4.7-.6-6-1.55V9.64c1.47.83 3.61 1.36 6 1.36s4.53-.53 6-1.36v2.81zM12 9C8.69 9 6 7.55 6 7s2.69-2 6-2 6 1.45 6 2-2.69 2-6 2z"/></svg>');
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      nav ul {
+        flex-direction: column;
+      }
+
+      .home-link {
+        top: 12px;
+        right: 12px;
+        padding: 6px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-database"></span>SQL Guide: планы и факультеты</h1>
+      <p>Шаблоны запросов для RAG (NewStud)</p>
+    </header>
+
+    <nav>
+      <ul>
+        <li><a href="#context">Контекст</a></li>
+        <li><a href="#faculties">Факультеты</a></li>
+        <li><a href="#plans">Учебные планы</a></li>
+        <li><a href="#reference">Справочник</a></li>
+        <li><a href="#tips">Советы</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section>
+        <p class="info-box">
+          Этот документ содержит два «копипастных» T‑SQL запроса по схеме <strong>NewStud</strong> и краткое объяснение логики, чтобы RAG-агент стабильно отвечал на вопросы про факультеты и учебные планы.
+        </p>
+      </section>
+
+      <section id="context">
+        <h2>Контекст и ключевые таблицы</h2>
+
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><strong>Firm</strong> — справочник организаций (факультеты/институты и т.п.). Частый фильтр для факультетов МГУ: <code>FK_Type_Firm = 3</code> и <code>NFirm_Parent = 99</code>.</li>
+              <li><strong>Educ_Plan</strong> — учебные планы (<code>PrK_Plan</code>, <code>Nfirm</code>, <code>Fk_Type</code>, <code>Fk_Form_Educ</code> и т.п.).</li>
+              <li><strong>Plan_Year_Enter</strong> — связь плана с годом набора (<code>Year_Enter</code>).</li>
+              <li><strong>Subject_Name_Order</strong> — дисциплины в плане.</li>
+              <li><strong>Comp_Term</strong> — компоненты семестра (<code>Num_Term</code>, <code>Beg_Act</code>, <code>End_Act</code> и нагрузки).</li>
+              <li><strong>Type_Business</strong> — уровень/тип обучения (<code>PrK_Type</code>).</li>
+              <li><strong>Form_Education</strong> — форма обучения (<code>PrK_Form_Educ</code>).</li>
+            </ul>
+          </div>
+
+          <h3>Маппинг учебного года и семестра</h3>
+          <div class="concept-list">
+            <ul>
+              <li><code>Course = (Num_Term + 1) / 2</code> (целочисленно).</li>
+              <li><code>Year_Enter = Year_Study - (Course - 1)</code>.</li>
+              <li>Проверка валидности <code>Comp_Term</code> для нужного набора: <code>ct.Beg_Act &lt;= Year_Enter AND (ct.End_Act = 0 OR ct.End_Act &gt;= Year_Enter)</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="faculties">
+        <h2>Запрос 1: список факультетов (МГУ)</h2>
+
+        <div class="table-card">
+          <p>Возвращает список факультетов с полезными полями для UI/вывода.</p>
+          <pre><code>SELECT
+    f.NFirm,                 -- faculty id
+    f.Firm_Name,            -- full name
+    f.Short_Name,           -- short name
+    f.Name_Gen_Case,        -- genitive case (for Russian UIs)
+    f.Engl_Name_Firm        -- English name (if filled)
+FROM dbo.Firm AS f
+WHERE f.FK_Type_Firm = 3     -- faculty
+  AND f.NFirm_Parent = 99    -- MSU root org (adjust if needed)
+ORDER BY f.Firm_Name;</code></pre>
+
+          <p class="info-box" style="margin-top: 18px;">
+            <strong>Подсказка:</strong> если нужно ограничить конкретным факультетом, добавьте <code>AND f.NFirm = @Nfirm</code>.
+          </p>
+        </div>
+      </section>
+
+      <section id="plans">
+        <h2>Запрос 2: учебные планы по факультету/году/семестру</h2>
+
+        <div class="table-card">
+          <p>
+            Запрос возвращает планы, которые реально «живые» для заданных <code>@Year_Study</code> и <code>@Num_Term</code>.
+            Ключевая идея — <code>EXISTS</code> по <code>Comp_Term</code> для проверки, что в этом семестре есть компоненты для нужного набора.
+          </p>
+
+          <pre><code>/* Parameters */
+DECLARE @Nfirm        INT  = 3;     -- faculty (Firm.NFirm)
+DECLARE @Year_Study   INT  = 2025;  -- academic year start (2025 =&gt; 2025/26)
+DECLARE @Num_Term     INT  = 1;     -- plan term: 1..12 (13 = non-teaching, usually)
+DECLARE @Fk_Form_Educ INT  = 1;     -- Form_Education.PrK_Form_Educ (1 = очная)
+DECLARE @Fk_Type      INT  = 1;     -- Type_Business.PrK_Type (1 = основное отделение/бакалавриат)
+
+IF @Num_Term NOT BETWEEN 1 AND 12
+BEGIN
+    RAISERROR (N'@Num_Term must be in 1..12.', 16, 1);
+    RETURN;
+END;
+
+-- Map term to course and entrance year
+DECLARE @Course     INT = (@Num_Term + 1) / 2;       -- 1..6
+DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);
+
+SELECT DISTINCT
+    ep.PrK_Plan                    AS Plan_ID,
+    ep.Name_Plan                   AS Plan_Name,
+    ep.Nfirm,
+    ep.Fk_Type,
+    tb.Name_Type                   AS Type_Name,       -- human-readable
+    ep.Fk_Form_Educ,
+    fe.Name_Form_Educ              AS Form_Name,       -- human-readable
+    ep.God,
+    ep.Engl_Name_Plan              AS Engl_Plan,
+    @Course                        AS Course,          -- derived from @Num_Term
+    @Year_Enter                    AS Year_Enter       -- derived from @Year_Study &amp; term
+FROM dbo.Educ_Plan ep
+JOIN dbo.Plan_Year_Enter pye
+  ON pye.FK_Plan = ep.PrK_Plan
+ AND pye.Nfirm   = ep.Nfirm
+JOIN dbo.Type_Business tb
+  ON tb.PrK_Type = ep.Fk_Type
+JOIN dbo.Form_Education fe
+  ON fe.PrK_Form_Educ = ep.Fk_Form_Educ
+WHERE ep.Nfirm        = @Nfirm
+  AND pye.Year_Enter  = @Year_Enter
+  AND ep.Fk_Form_Educ = @Fk_Form_Educ
+  AND ep.Fk_Type      = @Fk_Type
+  AND EXISTS (
+        SELECT 1
+        FROM dbo.Subject_Name_Order sno
+        JOIN dbo.Comp_Term ct
+          ON ct.NFirm      = sno.NFirm
+         AND ct.CodOrderID = sno.PrK_Subject_Order
+        WHERE sno.FK_Plan = ep.PrK_Plan
+          AND sno.NFirm  = ep.Nfirm
+          AND ct.Num_Term = @Num_Term
+          AND ct.Beg_Act &lt;= @Year_Enter
+          AND (ct.End_Act = 0 OR ct.End_Act &gt;= @Year_Enter)
+          -- Optional: exclude technical/externals if used in your instance
+          -- AND (sno.Sup_Property IS NULL OR sno.Sup_Property &lt;&gt; 55)
+          -- AND ISNULL(ct.FK_Sub_Plan, 0) &lt;&gt; 0  -- if you want only subplan-specific components
+    )
+ORDER BY ep.Name_Plan;</code></pre>
+
+          <h3>Зачем тут <code>EXISTS</code>?</h3>
+          <p class="info-box">
+            Он гарантирует, что у плана есть <strong>реальные компоненты</strong> в <code>Comp_Term</code> для нужного семестра и набора, а не только формальная запись.
+          </p>
+
+          <h3>Как подстроить фильтры</h3>
+          <div class="concept-list">
+            <ul>
+              <li><strong>Уровень/тип:</strong> меняйте <code>@Fk_Type</code> по <code>Type_Business</code> (например, магистратура/специалитет).</li>
+              <li><strong>Форма:</strong> меняйте <code>@Fk_Form_Educ</code> по <code>Form_Education</code> (очная/заочная/вечерняя и т.п.).</li>
+              <li><strong>Технические компоненты:</strong> можно включить исключения по <code>Sup_Property</code>, если у вас это используется.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="reference">
+        <h2>Справочник полей</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><code>Firm(FK_Type_Firm, NFirm_Parent)</code> — иерархия/фильтрация факультетов.</li>
+              <li><code>Educ_Plan(PrK_Plan, Nfirm, Fk_Type, Fk_Form_Educ, God)</code> — свойства плана.</li>
+              <li><code>Plan_Year_Enter(Year_Enter)</code> — год набора (запуск плана).</li>
+              <li><code>Subject_Name_Order(PrK_Subject_Order, FK_Plan, Nfirm)</code> — дисциплины плана.</li>
+              <li><code>Comp_Term(CodOrderID, Num_Term, Beg_Act, End_Act)</code> — компоненты и окно валидности.</li>
+              <li><code>Type_Business(PrK_Type, Name_Type)</code> — человеко-читаемый тип.</li>
+              <li><code>Form_Education(PrK_Form_Educ, Name_Form_Educ)</code> — человеко-читаемая форма.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="tips">
+        <h2>Советы для RAG</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li>Держите вывод <code>Course</code> и <code>Year_Enter</code> вместе с <code>Num_Term</code>, чтобы не было рассинхрона фильтров.</li>
+              <li>Для скорости часто лучше <code>EXISTS</code>, чем тяжёлые джойны с ранним раздуванием строк.</li>
+              <li>Если нужны нагрузки, расширяйте запрос полями <code>Lect_Load</code>, <code>Sem_Load</code>, <code>Lab_Load</code>, <code>Pract_Load</code>, <code>Quan_Week</code>.</li>
+              <li>Для запросов на уровне групп: дальше обычно идут <code>Sub_Plan → Group_Stud → Entrant</code> и фильтрация по последнему «живому» статусу.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation</p>
+    </footer>
+  </div>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('language-sql');
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+
+  <style>
+    /* Переопределение стилей highlight.js под нужную цветовую схему */
+    pre code.hljs {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .hljs-keyword {
+      color: #0000FF !important;
+      font-weight: bold !important;
+    }
+
+    .hljs-comment {
+      color: #008000 !important;
+    }
+
+    .hljs-string {
+      color: #FF0000 !important;
+    }
+
+    .hljs-number {
+      color: #000000 !important;
+    }
+
+    .hljs-built_in,
+    .hljs-type {
+      color: #0000FF !important;
+    }
+
+    .hljs-operator {
+      color: #808080 !important;
+    }
+  </style>
+</body>
+</html>
