@@ -1,0 +1,297 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>msu_sched: Схема БД (для RAG)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-database"></span>msu_sched</h1>
+      <p>Описание схемы БД приложения расписания (для RAG)</p>
+    </header>
+
+    <nav>
+      <h3>Навигация</h3>
+      <ul>
+        <li><a href="#about">О чём БД</a></li>
+        <li><a href="#top">Верхний уровень</a></li>
+        <li><a href="#series">Серии и занятия</a></li>
+        <li><a href="#entities">Учебные сущности</a></li>
+        <li><a href="#rooms">Аудитории</a></li>
+        <li><a href="#bells">Схемы звонков</a></li>
+        <li><a href="#map">Карта связей</a></li>
+        <li><a href="#with-newstud">Совместно с NewStud</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section id="about">
+        <h2><span class="icon icon-doc"></span>msu_sched — описание схемы (для RAG)</h2>
+        <p><code>msu_sched</code> — БД приложения расписания. Она хранит <strong>расписание как результат планирования</strong> (серии и конкретные занятия). Первичные источники данных:</p>
+        <div class="concept-list">
+          <ul>
+            <li><code>NewStud</code> — учебные планы, наборы, подпланы, группы, студенты.</li>
+            <li><code>nagruzka</code> — преподаватели и нагрузка.</li>
+          </ul>
+        </div>
+        <div class="info-box">
+          <p><strong>Ключевая идея для RAG:</strong> <em>кому ставить предмет</em> определяется в <code>NewStud</code>, а <code>msu_sched</code> хранит выбранные группы и фактически созданные слоты занятий.</p>
+        </div>
+
+        <div class="table-card">
+          <h3>Схема БД</h3>
+          <p>Файл: <code>public/sched/db_msu_sched.png</code></p>
+          <img class="content-image" src="db_msu_sched.png" alt="Схема базы данных msu_sched" />
+        </div>
+      </section>
+
+      <section id="top">
+        <h2><span class="icon icon-diagram"></span>1) Верхний уровень</h2>
+        <div class="table-card">
+          <h3>Timetable</h3>
+          <p>Заголовок расписания факультета на период.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Timetable.id</code>
+          </div>
+          <div>
+            <span class="badge badge-info">FK</span> <code>facultet_id -&gt; Facultet.id</code>
+          </div>
+          <div class="concept-list">
+            <ul>
+              <li>Период: <code>academic_year</code>, <code>period_type</code>, <code>period_name</code>, <code>start_date</code>, <code>end_date</code></li>
+              <li>Идентификация плана: <code>educplan_id</code> (как правило ссылка на <code>NewStud.Educ_Plan.PrK_Plan</code>)</li>
+            </ul>
+          </div>
+          <p>Связь: <code>Timetable (1) -&gt; (N) Series</code>.</p>
+        </div>
+      </section>
+
+      <section id="series">
+        <h2><span class="icon icon-bolt"></span>2) Серии и занятия</h2>
+
+        <div class="table-card">
+          <h3>Series</h3>
+          <p>Серия занятий: «предмет + тип занятия (+ преподаватель)» внутри <code>Timetable</code>.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Series.id</code>
+          </div>
+          <div class="concept-list">
+            <ul>
+              <li><span class="badge badge-info">FK</span> <code>timetable_id -&gt; Timetable.id</code></li>
+              <li><span class="badge badge-info">FK</span> <code>subject_id -&gt; Subject.id</code></li>
+              <li><span class="badge badge-info">FK</span> <code>prepod_id -&gt; Prepod.id</code></li>
+              <li><span class="badge badge-info">FK</span> <code>classType_id -&gt; ClassType.id</code></li>
+              <li>Нагрузка серии: <code>hoursLoad</code></li>
+            </ul>
+          </div>
+          <div class="concept-list">
+            <ul>
+              <li>Связь групп: <code>Series (N) &lt;-&gt; (M) Group</code> через <code>v_Series_Group(series_id, group_id)</code></li>
+              <li>Занятия: <code>Series (1) -&gt; (N) Schedule</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>Schedule</h3>
+          <p>Конкретное занятие (слот): дата/время/аудитория.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Schedule.id</code>
+          </div>
+          <div class="concept-list">
+            <ul>
+              <li><span class="badge badge-info">FK</span> <code>series_id -&gt; Series.id</code></li>
+              <li><span class="badge badge-info">FK</span> <code>prepod_id -&gt; Prepod.id</code> (можно переопределять относительно серии)</li>
+              <li><span class="badge badge-info">FK</span> <code>classType_id -&gt; ClassType.id</code></li>
+              <li><span class="badge badge-info">FK</span> <code>room_id -&gt; Room.id</code></li>
+              <li><span class="badge badge-info">FK</span> <code>paraNum -&gt; ParaNum.id</code></li>
+              <li>Время: <code>startDt</code>, <code>endDt</code></li>
+            </ul>
+          </div>
+          <div class="warning-box">
+            <p><strong>Правила конфликтов</strong> (обычно контроль приложением/констрейнтами):</p>
+            <div class="concept-list">
+              <ul>
+                <li>один <code>Room</code> не может иметь пересекающиеся интервалы;</li>
+                <li>один <code>Prepod</code> не может вести пересекающиеся интервалы;</li>
+                <li>группы, привязанные к сериям, не должны пересекаться по времени.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="entities">
+        <h2><span class="icon icon-table"></span>3) Учебные сущности (часто кеш/проекция)</h2>
+
+        <div class="table-card">
+          <h3>Facultet</h3>
+          <p>Справочник факультетов приложения.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Facultet.id</code>
+          </div>
+          <p>Внешняя привязка: <code>NFirm</code> (обычно <code>NewStud.Firm.NFirm</code>)</p>
+        </div>
+
+        <div class="table-card">
+          <h3>Group</h3>
+          <p>Группы, используемые при составлении расписания.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Group.id</code>
+          </div>
+          <div>
+            <span class="badge badge-info">FK</span> <code>facultet_id -&gt; Facultet.id</code>
+          </div>
+          <p>Атрибуты: <code>kurs</code>, <code>potok</code>, <code>studsCnt</code> (численность как кеш)</p>
+        </div>
+
+        <div class="table-card">
+          <h3>Student</h3>
+          <p>Если хранится детализация до студента.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Student.id</code>
+          </div>
+          <div>
+            <span class="badge badge-info">FK</span> <code>group_id -&gt; Group.id</code>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>Subject</h3>
+          <p>Дисциплины, доступные для расписания.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Subject.id</code>
+          </div>
+          <div>
+            <span class="badge badge-info">FK</span> <code>facultet_id -&gt; Facultet.id</code>
+          </div>
+          <p>Атрибут: <code>Semestr</code> (если используется)</p>
+        </div>
+
+        <div class="table-card">
+          <h3>Prepod</h3>
+          <p>Преподаватели.</p>
+          <div>
+            <span class="badge badge-primary">PK</span> <code>Prepod.id</code>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>v_Prepod_Subject</h3>
+          <p>Разрешённая/типовая связка «преподаватель–предмет».</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>prepod_id -&gt; Prepod.id</code></li>
+              <li><code>subject_id -&gt; Subject.id</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="rooms">
+        <h2><span class="icon icon-link"></span>4) Аудитории и вместимость</h2>
+
+        <div class="table-card">
+          <h3>Campus -&gt; Building -&gt; Room</h3>
+          <p>Иерархия мест проведения.</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>Building.campus_id -&gt; Campus.id</code></li>
+              <li><code>Room.building_id -&gt; Building.id</code></li>
+              <li><code>Room.facultet_id -&gt; Facultet.id</code> (владелец)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>CapacityType, v_Room_Capacity</h3>
+          <p>Вместимость аудитории по типам рассадки.</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>v_Room_Capacity(room_id, capacityType_id, seatsCnt, is_primary, is_deleted)</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="bells">
+        <h2><span class="icon icon-table"></span>5) Схемы звонков</h2>
+
+        <div class="table-card">
+          <h3>ParaNum</h3>
+          <p>Номер пары (1..N).</p>
+        </div>
+
+        <div class="table-card">
+          <h3>BellSchema, v_BellSchema_ParaNum</h3>
+          <p>Схема звонков (времена начала/конца пар), часто привязана к зданию.</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>BellSchema.building_id -&gt; Building.id</code></li>
+              <li><code>v_BellSchema_ParaNum(bellSchema_id, paraNum_id, startTime, endTime)</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="map">
+        <h2><span class="icon icon-diagram"></span>6) Карта связей (кратко)</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><code>Facultet (1) -&gt; (N) Timetable</code></li>
+              <li><code>Timetable (1) -&gt; (N) Series</code></li>
+              <li><code>Series (1) -&gt; (N) Schedule</code></li>
+              <li><code>Series (N) &lt;-&gt; (M) Group</code> через <code>v_Series_Group</code></li>
+              <li><code>Schedule (N) -&gt; (1) Room -&gt; Building -&gt; Campus</code></li>
+              <li><code>Schedule (N) -&gt; (1) Prepod</code></li>
+              <li><code>Schedule (N) -&gt; (1) ClassType</code></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="with-newstud">
+        <h2><span class="icon icon-bulb"></span>7) Как это использовать совместно с NewStud</h2>
+        <div class="table-card">
+          <p>Для мастера создания серий:</p>
+          <div class="concept-list">
+            <ol>
+              <li>В <code>NewStud</code> получить предметы и нагрузку на выбранные <code>Plan + Year_Study + Course + Semester</code> (через <code>Comp_Term</code>).</li>
+              <li>В <code>NewStud</code> определить <strong>группы/студентов</strong>, которые должны изучать предмет (учитывая <code>FK_Sub_Plan</code>, а также случаи <code>FK_Sub_Plan IS NULL</code>).</li>
+              <li>Создать <code>Timetable</code> (если нет) и <code>Series</code>.</li>
+              <li>Привязать группы к серии: <code>v_Series_Group</code>.</li>
+              <li>Создать конкретные занятия: <code>Schedule</code>.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('pre code').forEach(function (block) {
+          block.classList.add('language-sql');
+          hljs.highlightElement(block);
+        });
+      });
+    </script>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation | Система управления расписанием</p>
+    </footer>
+  </div>
+</body>
+</html>
