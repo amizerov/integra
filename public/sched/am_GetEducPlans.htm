@@ -1,0 +1,206 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Процедура: am_GetEducPlans</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-doc"></span>Процедура am_GetEducPlans</h1>
+      <p>Учебные планы факультета для курса и терма</p>
+    </header>
+
+    <nav>
+      <h3>Навигация</h3>
+      <ul>
+        <li><a href="#purpose">Назначение</a></li>
+        <li><a href="#signature">Сигнатура</a></li>
+        <li><a href="#logic">Логика</a></li>
+        <li><a href="#full">Полный текст</a></li>
+        <li><a href="#takeaways">Выводы для RAG</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section id="purpose">
+        <h2><span class="icon icon-doc"></span>Назначение</h2>
+        <p>Хранимая процедура <code>dbo.am_GetEducPlans</code> предназначена для получения списка учебных планов факультета, которые реально используются в заданном учебном году и имеют учебную нагрузку в указанном терме.</p>
+
+        <div class="table-card">
+          <h3>Где применяется</h3>
+          <div class="concept-list">
+            <ul>
+              <li>визарде создания расписания,</li>
+              <li>RAG-агентах для SQL reasoning,</li>
+              <li>построении дерева «Факультет → План → Курс → Предмет».</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="signature">
+        <h2><span class="icon icon-table"></span>Сигнатура процедуры</h2>
+        <div class="table-card">
+          <pre><code>dbo.am_GetEducPlans
+(
+    @Nfirm        INT,      -- факультет (Firm.Nfirm)
+    @Year_Study   INT,      -- год начала учебного года (например, 2025 для 2025/26)
+    @Num_Term     INT = 1,  -- сквозной номер терма (1..12, иногда 13)
+    @Fk_Form_Educ INT = 0,  -- форма обучения (0 = не фильтровать)
+    @Fk_Type      INT = 0   -- тип обучения (0 = не фильтровать)
+)</code></pre>
+        </div>
+      </section>
+
+      <section id="logic">
+        <h2><span class="icon icon-bulb"></span>Логика работы</h2>
+
+        <div class="table-card">
+          <h3>1) Определение курса по терму</h3>
+          <p>Формула:</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>Course = ((Num_Term - 1) / 2) + 1</code></li>
+            </ul>
+          </div>
+          <p>Подсказка по диапазонам:</p>
+          <div class="concept-list">
+            <ul>
+              <li><span class="badge badge-info">1 курс</span> <code>Num_Term = 1–2</code></li>
+              <li><span class="badge badge-info">2 курс</span> <code>Num_Term = 3–4</code></li>
+              <li><span class="badge badge-info">3 курс</span> <code>Num_Term = 5–6</code></li>
+              <li><span class="badge badge-info">4 курс</span> <code>Num_Term = 7–8</code></li>
+              <li><span class="badge badge-info">5 курс</span> <code>Num_Term = 9–10</code></li>
+              <li><span class="badge badge-info">6 курс</span> <code>Num_Term = 11–12</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>2) Вычисление года набора (Year_Enter)</h3>
+          <p>Формула:</p>
+          <div class="concept-list">
+            <ul>
+              <li><code>Year_Enter = Year_Study - (Course - 1)</code></li>
+            </ul>
+          </div>
+          <div class="info-box">
+            <p><strong>Пример:</strong> учебный год <code>2025/26</code>, <code>Num_Term = 3</code> → <code>2 курс</code> → <code>Year_Enter = 2024</code>.</p>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>3) Фильтрация по реальному набору</h3>
+          <p>Используется таблица <code>Plan_Year_Enter</code>, что гарантирует:</p>
+          <div class="concept-list">
+            <ul>
+              <li>план реально запускался,</li>
+              <li>студенты существуют.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <h3>4) Проверка наличия дисциплин в терме</h3>
+          <p>Через <code>EXISTS</code> по связке <code>Subject_Name_Order + Comp_Term</code> отсекаются планы, у которых в указанном терме отсутствует учебная нагрузка.</p>
+        </div>
+      </section>
+
+      <section id="full">
+        <h2><span class="icon icon-book"></span>Полный текст процедуры</h2>
+        <div class="table-card">
+          <pre><code>ALTER PROC [dbo].[am_GetEducPlans]
+    @Nfirm        INT,
+    @Year_Study   INT,
+    @Num_Term     INT = 1,
+    @Fk_Form_Educ INT = 0,
+    @Fk_Type      INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Course INT = ((@Num_Term - 1) / 2) + 1;
+    DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);
+
+    SELECT DISTINCT
+        ep.PrK_Plan        AS Plan_ID,
+        ep.Name_Plan       AS Plan_Name,
+        ep.Nfirm,
+        ep.Fk_Type,
+        tb.Name_Type       AS Type_Name,
+        ep.Fk_Form_Educ,
+        fe.Name_Form_Educ  AS Form_Name,
+        ep.God,
+        ep.Engl_Name_Plan  AS Engl_Plan,
+        @Course            AS Course,
+        @Year_Enter        AS Year_Enter
+    FROM dbo.Educ_Plan ep
+    JOIN dbo.Plan_Year_Enter pye
+      ON pye.FK_Plan    = ep.PrK_Plan
+     AND pye.Nfirm      = ep.Nfirm
+     AND pye.Year_Enter = @Year_Enter
+    JOIN dbo.Type_Business tb
+      ON tb.PrK_Type = ep.Fk_Type
+    JOIN dbo.Form_Education fe
+      ON fe.PrK_Form_Educ = ep.Fk_Form_Educ
+    WHERE ep.Nfirm = @Nfirm
+      AND (@Fk_Form_Educ = 0 OR ep.Fk_Form_Educ = @Fk_Form_Educ)
+      AND (@Fk_Type = 0 OR ep.Fk_Type = @Fk_Type)
+      AND EXISTS (
+          SELECT 1
+          FROM dbo.Subject_Name_Order sno
+          JOIN dbo.Comp_Term ct
+            ON ct.NFirm      = sno.NFirm
+           AND ct.CodOrderID = sno.PrK_Subject_Order
+          WHERE sno.FK_Plan = ep.PrK_Plan
+            AND sno.NFirm  = ep.Nfirm
+            AND ct.Num_Term = @Num_Term
+            AND ct.Beg_Act <= @Year_Enter
+            AND (ct.End_Act = 0 OR ct.End_Act >= @Year_Enter)
+      )
+    ORDER BY ep.Name_Plan;
+END</code></pre>
+        </div>
+      </section>
+
+      <section id="takeaways">
+        <h2><span class="icon icon-bulb"></span>Ключевые выводы для RAG</h2>
+        <div class="success-box">
+          <ul>
+            <li><span class="icon-check"></span><code>Num_Term</code> — главный управляющий параметр.</li>
+            <li><span class="icon-check"></span>Курс и год набора вычисляются автоматически.</li>
+            <li><span class="icon-check"></span>Возвращаются только планы, для которых реально можно строить расписание.</li>
+            <li><span class="icon-check"></span>Корректная точка входа для визарда расписания и RAG-агентов.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('pre code').forEach(function (block) {
+          block.classList.add('language-sql');
+          hljs.highlightElement(block);
+        });
+      });
+    </script>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation | Система управления расписанием</p>
+    </footer>
+  </div>
+</body>
+</html>
+
