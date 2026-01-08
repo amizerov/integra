@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Особенности Plan_Year_Enter и дублирование планов</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-doc"></span>Особенности Plan_Year_Enter</h1>
+      <p>Причины дублирования учебных планов в запросах</p>
+    </header>
+
+    <nav>
+      <h3>Навигация</h3>
+      <ul>
+        <li><a href="#context">Контекст проблемы</a></li>
+        <li><a href="#purpose">Назначение таблицы</a></li>
+        <li><a href="#issue">Ключевая особенность</a></li>
+        <li><a href="#causes">Реальные причины</a></li>
+        <li><a href="#impact">Влияние на запросы</a></li>
+        <li><a href="#recommendations">Рекомендации</a></li>
+        <li><a href="#diagnostic">Диагностика</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section id="context">
+        <h2><span class="icon icon-doc"></span>Контекст проблемы</h2>
+        <p>При работе с процедурами получения учебных планов (например, <code>am_GetEducPlans</code>) может возникать ситуация, когда один и тот же учебный план (<code>Educ_Plan</code>) возвращается несколько раз с разным количеством студентов.</p>
+        
+        <div class="warning-box">
+          <p>На первый взгляд это выглядит как ошибка в SQL-запросе, однако на практике корень проблемы почти всегда лежит в данных таблицы <strong>Plan_Year_Enter</strong>.</p>
+        </div>
+      </section>
+
+      <section id="purpose">
+        <h2><span class="icon icon-table"></span>Назначение Plan_Year_Enter</h2>
+        <p><code>Plan_Year_Enter</code> фиксирует факт запуска учебного плана для конкретного года набора и инспектора.<br>
+        Одна запись — это не «план», а <strong>административное оформление набора</strong>.</p>
+
+        <div class="table-card">
+          <h3>Ключевые поля</h3>
+          <div class="concept-list">
+            <ul>
+              <li><code>FK_Plan</code> — учебный план</li>
+              <li><code>Year_Enter</code> — год набора</li>
+              <li><code>NFirm</code> — факультет</li>
+              <li><code>FK_Insp</code> — инспектор</li>
+              <li><code>PrK_Plan_Year</code> — идентификатор запуска плана</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="issue">
+        <h2><span class="icon icon-bulb"></span>Ключевая особенность</h2>
+        <div class="warning-box">
+          <p>В базе <strong>нет ограничения уникальности</strong> на комбинацию <code>(FK_Plan, Year_Enter, NFirm)</code>.<br>
+          Это позволяет существовать нескольким строкам <code>Plan_Year_Enter</code> для одного и того же плана и года.</p>
+        </div>
+      </section>
+
+      <section id="causes">
+        <h2><span class="icon icon-doc"></span>Реальная причина дублей</h2>
+        <p>Дубли появляются из-за административных факторов:</p>
+        <div class="concept-list">
+          <ul>
+            <li>повторное заведение набора,</li>
+            <li>параллельная работа инспекторов,</li>
+            <li>корректировки задним числом,</li>
+            <li>историческое наследие данных.</li>
+          </ul>
+        </div>
+        <div class="info-box">
+          <p>Это системная особенность модели, а не ошибка пользователя.</p>
+        </div>
+      </section>
+
+      <section id="impact">
+        <h2><span class="icon icon-table"></span>Как это влияет на запросы</h2>
+        <p>Если запрос:</p>
+        <div class="concept-list">
+          <ul>
+            <li>напрямую JOIN-ится на <code>Plan_Year_Enter</code>,</li>
+            <li>и считает студентов,</li>
+          </ul>
+        </div>
+        <p>то один план возвращается несколько раз — по каждому <code>PrK_Plan_Year</code>, с разным количеством студентов.</p>
+
+        <div class="table-card">
+          <h3>Почему это критично для расписания</h3>
+          <p>Расписание формируется:</p>
+          <div class="concept-list">
+            <ul>
+              <li>на <strong>учебный план</strong>,</li>
+              <li>для <strong>реальных групп и студентов</strong>.</li>
+            </ul>
+          </div>
+          <div class="warning-box">
+            <p><code>Plan_Year_Enter</code> — вспомогательная таблица, и её нельзя использовать как уникальный ключ учебного процесса.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="recommendations">
+        <h2><span class="icon icon-bulb"></span>Рекомендации</h2>
+        <div class="success-box">
+          <ol>
+            <li>Агрегировать данные <strong>по FK_Plan</strong>, а не по <code>PrK_Plan_Year</code>.</li>
+            <li>Считать студентов через <code>COUNT(DISTINCT Entrant)</code>.</li>
+            <li>Использовать <code>Plan_Year_Enter</code> только как фильтр по году набора.</li>
+            <li>Для новых систем не копировать эту модель без переработки.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="diagnostic">
+        <h2><span class="icon icon-book"></span>Диагностика дублей</h2>
+        <div class="table-card">
+          <pre><code>SELECT FK_Plan, Year_Enter, COUNT(*) AS Cnt
+FROM Plan_Year_Enter
+GROUP BY FK_Plan, Year_Enter
+HAVING COUNT(*) > 1;</code></pre>
+        </div>
+      </section>
+
+      <section id="conclusion">
+        <h2><span class="icon icon-bulb"></span>Вывод</h2>
+        <div class="info-box">
+          <p>Повторяющиеся планы с разным количеством студентов — ожидаемое следствие структуры данных <code>Plan_Year_Enter</code>.<br>
+          Любая аналитика и логика расписания должны учитывать эту особенность.</p>
+        </div>
+        <p>Документ предназначен для использования в RAG-системах и как справочный материал по базе NewStud.</p>
+      </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('pre code').forEach(function (block) {
+          block.classList.add('language-sql');
+          hljs.highlightElement(block);
+        });
+      });
+    </script>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation | Система управления расписанием</p>
+    </footer>
+  </div>
+</body>
+</html>
