@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Как получить даты начала и конца семестра</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="home-link" href="index.htm" aria-label="Оглавление">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 3l10 9h-3v9h-6v-6H11v6H5v-9H2l10-9z" />
+        </svg>
+        <span>Оглавление</span>
+      </a>
+      <h1><span class="icon icon-doc"></span>Как получить даты начала и конца семестра</h1>
+      <p>NewStud / Sched: границы терма из <code>Graph</code> + <code>Num_Week</code> + <code>Duration</code></p>
+    </header>
+
+    <nav>
+      <h3>Навигация</h3>
+      <ul>
+        <li><a href="#idea">Идея</a></li>
+        <li><a href="#year">Как «приклеить» год</a></li>
+        <li><a href="#proc">Процедура</a></li>
+        <li><a href="#example">Пример вызова</a></li>
+        <li><a href="#stage">Если код стадии другой</a></li>
+        <li><a href="#why">Почему <code>Graph</code>, а не <code>Comp_Term</code></a></li>
+        <li><a href="#check">Проверка / диагностика</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      <section id="idea">
+        <h2>Идея</h2>
+        <p class="info-box">
+          Даты начала/конца семестра в модели NewStud корректнее брать из <strong><code>Graph</code></strong> (календарь плана)
+          + <strong><code>Num_Week</code></strong> (стартовая неделя)
+          + <strong><code>Duration</code></strong> (длительность в неделях).
+        </p>
+        <div class="table-card">
+          <p>
+            Ниже — готовая процедура (SQL Server 2008+; без <code>TRY_CONVERT</code>), возвращает
+            <strong>StartDate</strong> и <strong>EndDate</strong> (включительно) для выбранного
+            <strong>плана</strong>, <strong>учебного года</strong> и <strong>терма</strong> (<code>Graph.Term</code>).
+          </p>
+        </div>
+      </section>
+
+      <section id="year">
+        <h2>Как «приклеить» год</h2>
+        <div class="table-card">
+          <p>
+            Поле <code>Num_Week.Date_Week</code> хранится как <strong><code>dd.mm</code> без года</strong>, поэтому год нужно
+            вычислять по учебному году:
+          </p>
+          <div class="concept-list">
+            <ul>
+              <li>если месяц <code>&gt;= 9</code> → год = <code>@Year_Study</code> (например, 2025 для 2025/26);</li>
+              <li>иначе → год = <code>@Year_Study + 1</code>.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="proc">
+        <h2>Процедура am_GetTermDates</h2>
+        <div class="table-card">
+          <pre><code>IF OBJECT_ID('dbo.am_GetTermDates', 'P') IS NOT NULL
+    DROP PROC dbo.am_GetTermDates;
+GO
+
+CREATE PROC dbo.am_GetTermDates
+    @PlanID     INT,  -- Educ_Plan.PrK_Plan
+    @Year_Study INT,  -- год начала учебного года (напр., 2025 для 2025/26)
+    @Term       INT   -- сквозной номер терма (Graph.Term)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Nfirm INT;
+    SELECT @Nfirm = ep.Nfirm
+    FROM dbo.Educ_Plan ep
+    WHERE ep.PrK_Plan = @PlanID;
+
+    IF @Nfirm IS NULL
+    BEGIN
+        RAISERROR(N'План не найден', 16, 1);
+        RETURN;
+    END
+
+    /*
+      Берём именно этап "Теоретическое обучение".
+      Если у вас другой код этапа, поменяйте условие:
+      - либо по FK_Educ_Stage = 1,
+      - либо по названию Educ_Stage_Name LIKE N'Теорет%'.
+    */
+    ;WITH G AS (
+        SELECT TOP (1)
+            g.FK_Plan,
+            g.Term,
+            g.Course,
+            g.Duration,
+            g.FK_Week,
+            nw.Date_Week,
+            MonthNum = CAST(SUBSTRING(nw.Date_Week, 4, 2) AS INT)
+        FROM dbo.Graph g
+        JOIN dbo.Num_Week nw ON nw.PrK_Week = g.FK_Week
+        WHERE g.FK_Plan = @PlanID
+          AND g.NFirm   = @Nfirm
+          AND g.Term    = @Term
+          AND g.FK_Educ_Stage = 1
+        ORDER BY g.Num_Stage
+    )
+    SELECT
+        FK_Plan        = @PlanID,
+        NFirm          = @Nfirm,
+        Term           = g.Term,
+        Course         = g.Course,
+        DurationWeeks  = g.Duration,
+        FK_Week        = g.FK_Week,
+        Date_Week      = g.Date_Week,
+        StartDate      = CONVERT(date,
+                          g.Date_Week + '.' +
+                          CAST(CASE WHEN g.MonthNum &gt;= 9 THEN @Year_Study ELSE @Year_Study + 1 END AS varchar(4)),
+                          104),
+        -- Конец семестра как последний день последней недели (включительно)
+        EndDate        = CONVERT(date,
+                          DATEADD(day, 7 * g.Duration - 1,
+                            CONVERT(datetime,
+                              g.Date_Week + '.' +
+                              CAST(CASE WHEN g.MonthNum &gt;= 9 THEN @Year_Study ELSE @Year_Study + 1 END AS varchar(4)),
+                              104)))
+    FROM G g;
+END
+GO</code></pre>
+        </div>
+      </section>
+
+      <section id="example">
+        <h2>Пример вызова</h2>
+        <div class="table-card">
+          <pre><code>EXEC dbo.am_GetTermDates @PlanID = 671, @Year_Study = 2025, @Term = 1;  -- осень 1 курса
+EXEC dbo.am_GetTermDates @PlanID = 671, @Year_Study = 2025, @Term = 2;  -- весна 1 курса</code></pre>
+        </div>
+      </section>
+
+      <section id="stage">
+        <h2>Если код стадии другой</h2>
+        <div class="table-card">
+          <p>Иногда «теоретическое обучение» имеет другой код. Тогда замените фильтр:</p>
+          <pre><code>AND g.FK_Educ_Stage = 1</code></pre>
+          <p>на вариант с именем стадии:</p>
+          <pre><code>JOIN dbo.Educ_Stage es ON es.PrK_Educ_Stage = g.FK_Educ_Stage
+...
+AND es.Educ_Stage_Name LIKE N'Теорет%'</code></pre>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2>Почему Graph, а не Comp_Term</h2>
+        <div class="table-card">
+          <div class="concept-list">
+            <ul>
+              <li><code>Graph</code> задаёт <strong>календарное окно семестра</strong> (когда реально можно ставить занятия).</li>
+              <li><code>Comp_Term</code> задаёт <strong>нагрузку по предметам</strong> внутри семестра (<code>Quan_Week</code>, типы занятий).</li>
+            </ul>
+          </div>
+          <p>
+            Обычно <code>Graph.Duration</code> и <code>Comp_Term.Quan_Week</code> должны совпадать для соответствующего терма (на этапе “теория”),
+            но границы периода логичнее брать именно из <code>Graph</code>.
+          </p>
+        </div>
+      </section>
+
+      <section id="check">
+        <h2>Проверка / диагностика</h2>
+        <p class="info-box">
+          Если процедура возвращает корректные даты, но дальше «не бьётся» нагрузка/предметы, первым делом проверьте
+          консистентность <code>Graph.Duration</code> vs <code>Comp_Term.Quan_Week</code> для того же <code>Term/Num_Term</code> и нужного набора.
+        </p>
+
+        <div class="table-card">
+          <h3>Сводка: сколько недель по Graph и по Comp_Term</h3>
+          <pre><code>DECLARE
+    @PlanID     INT = 671,
+    @Year_Study INT = 2025,
+    @Term       INT = 1;
+
+DECLARE @Nfirm INT;
+SELECT @Nfirm = ep.Nfirm
+FROM dbo.Educ_Plan ep
+WHERE ep.PrK_Plan = @PlanID;
+
+;WITH G AS (
+    SELECT TOP (1)
+        g.FK_Plan,
+        g.NFirm,
+        g.Term,
+        g.Course,
+        g.Duration
+    FROM dbo.Graph g
+    WHERE g.FK_Plan = @PlanID
+      AND g.NFirm   = @Nfirm
+      AND g.Term    = @Term
+      AND g.FK_Educ_Stage = 1
+    ORDER BY g.Num_Stage
+), Ctx AS (
+    SELECT
+        g.*,
+        Year_Enter = @Year_Study - (g.Course - 1)
+    FROM G g
+)
+SELECT
+    c.FK_Plan,
+    c.NFirm,
+    c.Term,
+    c.Course,
+    Year_Enter  = c.Year_Enter,
+    GraphWeeks  = c.Duration,
+    CTItems     = COUNT(ct.PrK_Comp_Term),
+    DistinctCTWeeks = COUNT(DISTINCT ct.Quan_Week),
+    MinCTWeeks  = MIN(ct.Quan_Week),
+    MaxCTWeeks  = MAX(ct.Quan_Week)
+FROM Ctx c
+LEFT JOIN dbo.Comp_Term ct
+  ON ct.NFirm    = c.NFirm
+ AND ct.Num_Term = c.Term
+ AND ct.Beg_Act &lt;= c.Year_Enter
+ AND (ct.End_Act = 0 OR ct.End_Act &gt;= c.Year_Enter)
+LEFT JOIN dbo.Subject_Name_Order sno
+  ON sno.PrK_Subject_Order = ct.CodOrderID
+ AND sno.NFirm             = ct.NFirm
+ -- Если в вашей схеме есть FK на план, включите жёсткую привязку:
+ -- AND sno.FK_Plan           = c.FK_Plan
+GROUP BY c.FK_Plan, c.NFirm, c.Term, c.Course, c.Year_Enter, c.Duration;</code></pre>
+          <p class="warning-box" style="margin-top: 18px;">
+            <strong>Как читать результат:</strong> если <code>DistinctCTWeeks &gt; 1</code> или диапазон <code>MinCTWeeks..MaxCTWeeks</code>
+            не равен <code>GraphWeeks</code>, значит в <code>Comp_Term</code> по этому терму есть неоднородные компоненты или «съехали» данные.
+          </p>
+        </div>
+
+        <div class="table-card">
+          <h3>Детализация: какие именно значения Quan_Week встречаются</h3>
+          <pre><code>DECLARE
+    @PlanID     INT = 671,
+    @Year_Study INT = 2025,
+    @Term       INT = 1;
+
+DECLARE @Nfirm INT;
+SELECT @Nfirm = ep.Nfirm
+FROM dbo.Educ_Plan ep
+WHERE ep.PrK_Plan = @PlanID;
+
+DECLARE @Course INT;
+SELECT TOP (1) @Course = g.Course
+FROM dbo.Graph g
+WHERE g.FK_Plan = @PlanID
+  AND g.NFirm   = @Nfirm
+  AND g.Term    = @Term
+  AND g.FK_Educ_Stage = 1
+ORDER BY g.Num_Stage;
+
+DECLARE @Year_Enter INT = @Year_Study - (@Course - 1);
+
+SELECT
+    ct.Quan_Week,
+    Items = COUNT(*),
+    Subjects = COUNT(DISTINCT ct.CodOrderID)
+FROM dbo.Comp_Term ct
+WHERE ct.NFirm    = @Nfirm
+  AND ct.Num_Term = @Term
+  AND ct.Beg_Act &lt;= @Year_Enter
+  AND (ct.End_Act = 0 OR ct.End_Act &gt;= @Year_Enter)
+GROUP BY ct.Quan_Week
+ORDER BY ct.Quan_Week;</code></pre>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 NewStud Database Documentation</p>
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('language-sql');
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+</body>
+</html>
