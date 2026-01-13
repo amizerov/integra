@@ -277,6 +277,24 @@
         color: var(--text);
       }
 
+      figure {
+        margin: 10px 0 0;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        background: color-mix(in oklab, var(--surface2), transparent 15%);
+      }
+      figcaption {
+        margin-top: 8px;
+        color: var(--faint);
+        font-size: 13px;
+      }
+
       pre {
         margin: 10px 0 0;
         padding: 12px;
@@ -382,22 +400,29 @@
               </li>
               <li>
                 <a href="#s5">
-                  <span class="toc-label">5. Примеры кода серверной части</span
+                  <span class="toc-label">5. Как может выглядеть приложение «Расписание»</span
                   ><span class="toc-leader" aria-hidden="true"></span
                   ><span class="toc-page" aria-label="Страница 5">5</span>
                 </a>
               </li>
               <li>
                 <a href="#s6">
-                  <span class="toc-label">6. Мини-приложение и валидация InitData</span
+                  <span class="toc-label">6. Примеры кода серверной части</span
                   ><span class="toc-leader" aria-hidden="true"></span
                   ><span class="toc-page" aria-label="Страница 6">6</span>
                 </a>
               </li>
               <li>
                 <a href="#s7">
-                  <span class="toc-label">7. Выводы</span><span class="toc-leader" aria-hidden="true"></span
+                  <span class="toc-label">7. Мини-приложение и валидация InitData</span
+                  ><span class="toc-leader" aria-hidden="true"></span
                   ><span class="toc-page" aria-label="Страница 7">7</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s8">
+                  <span class="toc-label">8. Выводы</span><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 8">8</span>
                 </a>
               </li>
             </ul>
@@ -537,7 +562,25 @@
           </section>
 
           <section id="s5">
-            <h2>5. Примеры кода серверной части (Node.js)</h2>
+            <h2>5. Как может выглядеть приложение «Расписание» в MAX</h2>
+            <p class="muted">
+              Ниже — пример того, как может выглядеть мини‑приложение «Расписание» внутри MAX: карточки, акценты на
+              ближайшие занятия, быстрые фильтры и понятная навигация.
+            </p>
+
+            <div class="callout">
+              <b>Идея структуры:</b> верхняя панель (группа/неделя), быстрые переключатели «Сегодня / Завтра / Неделя»,
+              список занятий карточками, а в деталях — аудитория, преподаватель, тип занятия и пометки об изменениях.
+            </div>
+
+            <figure>
+              <img src="maxwebapp.png" alt="Пример интерфейса мини‑приложения «Расписание» в MAX" loading="lazy" />
+              <figcaption>Скетч/пример экрана: визуальный ориентир для будущего UI.</figcaption>
+            </figure>
+          </section>
+
+          <section id="s6">
+            <h2>6. Примеры кода серверной части (Node.js)</h2>
             <p class="muted">
               Ниже — примеры, которые соответствуют подходу MAX: bot-интеграция через HTTPS и запуск мини-приложения
               через кнопку open_app.
@@ -547,7 +590,7 @@
               документации, но базовая схема “POST /messages + inline_keyboard/open_app” подтверждена в разделе API.
             </div>
 
-            <h3>5.1. Отправка сообщения с кнопкой «Открыть расписание» (open_app)</h3>
+            <h3>6.1. Отправка сообщения с кнопкой «Открыть расписание» (open_app)</h3>
             <pre><code class="language-javascript">import fetch from "node-fetch";
 
 const MAX_TOKEN = process.env.MAX_TOKEN;
@@ -589,7 +632,7 @@ export async function sendOpenApp(chatId, webAppUrl) {
 
             <p class="muted">Ограничения и форматы inline-клавиатуры (включая open_app) описаны в обзоре API.</p>
 
-            <h3>5.2. Получение обновлений: long polling (для DEV)</h3>
+            <h3>6.2. Получение обновлений: long polling (для DEV)</h3>
             <pre><code class="language-javascript">export async function pollUpdates(offset) {
   const url = new URL(`${API}/updates`);
   if (offset) url.searchParams.set("offset", String(offset));
@@ -601,7 +644,7 @@ export async function sendOpenApp(chatId, webAppUrl) {
 }</code></pre>
             <p class="muted">MAX прямо рекомендует long polling для разработки и webhook для production.</p>
 
-            <h3>5.3. Webhook подписка (для PROD)</h3>
+            <h3>6.3. Webhook подписка (для PROD)</h3>
             <p class="muted">По документации подписки управляются через subscriptions (есть POST и GET).</p>
             <p>Типовой серверный обработчик webhook (Express):</p>
             <pre><code class="language-javascript">import express from "express";
@@ -619,7 +662,7 @@ app.post("/max/webhook", async (req, res) =&gt; {
 
 app.listen(3000);</code></pre>
 
-            <h3>5.4. Загрузка файлов (PDF/PNG расписания)</h3>
+            <h3>6.4. Загрузка файлов (PDF/PNG расписания)</h3>
             <p class="muted">
               MAX выдаёт URL для загрузки через POST /uploads и предупреждает о замене type=photo на type=image.
             </p>
@@ -634,10 +677,10 @@ app.listen(3000);</code></pre>
 }</code></pre>
           </section>
 
-          <section id="s6">
-            <h2>6. Мини-приложение: код клиента и валидация InitData</h2>
+          <section id="s7">
+            <h2>7. Мини-приложение: код клиента и валидация InitData</h2>
 
-            <h3>6.1. Подключение MAX Bridge</h3>
+            <h3>7.1. Подключение MAX Bridge</h3>
             <p>В мини-приложение подключается библиотека:</p>
             <pre><code class="language-html">&lt;script src="https://st.max.ru/js/max-web-app.js"&gt;&lt;/script&gt;
 &lt;script&gt;
@@ -645,7 +688,7 @@ app.listen(3000);</code></pre>
 &lt;/script&gt;</code></pre>
             <p class="muted">Это даёт доступ к объекту window.WebApp.</p>
 
-            <h3>6.2. Валидация InitData</h3>
+            <h3>7.2. Валидация InitData</h3>
             <p class="muted">
               MAX передаёт стартовые параметры (Init Data), которые нужно валидировать, чтобы убедиться, что данные не
               подменены. Описание алгоритма включает:
@@ -689,8 +732,8 @@ export function validateInitData(initDataRaw, botToken) {
 }</code></pre>
           </section>
 
-          <section id="s7">
-            <h2>7. Выводы и оценка применимости MAX для расписания</h2>
+          <section id="s8">
+            <h2>8. Выводы и оценка применимости MAX для расписания</h2>
 
             <ul>
               <li>
