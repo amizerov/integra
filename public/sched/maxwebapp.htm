@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>MAX как клиент расписания — конспект</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --bg2: #0a162f;
+        --surface: rgba(255, 255, 255, 0.06);
+        --surface2: rgba(255, 255, 255, 0.09);
+        --border: rgba(255, 255, 255, 0.12);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.72);
+        --faint: rgba(255, 255, 255, 0.55);
+        --accent: #7dd3fc;
+        --accent2: #a78bfa;
+        --good: #34d399;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial,
+          "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f7f8fc;
+          --bg2: #eef2ff;
+          --surface: rgba(255, 255, 255, 0.85);
+          --surface2: rgba(255, 255, 255, 0.95);
+          --border: rgba(15, 23, 42, 0.12);
+          --text: rgba(15, 23, 42, 0.92);
+          --muted: rgba(15, 23, 42, 0.72);
+          --faint: rgba(15, 23, 42, 0.55);
+          --shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        color: var(--text);
+        background: radial-gradient(1200px 800px at 15% -10%, rgba(125, 211, 252, 0.25), transparent 60%),
+          radial-gradient(900px 700px at 110% 10%, rgba(167, 139, 250, 0.22), transparent 55%),
+          linear-gradient(180deg, var(--bg), var(--bg2));
+        line-height: 1.6;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+        text-decoration-color: color-mix(in oklab, var(--accent), transparent 55%);
+      }
+
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 28px 16px 64px;
+      }
+
+      header.hero {
+        position: relative;
+        padding: 22px 22px 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(135deg, color-mix(in oklab, var(--surface2), transparent 0%), var(--surface));
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      header.hero::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        background: radial-gradient(900px 260px at 20% 0%, rgba(125, 211, 252, 0.25), transparent 55%),
+          radial-gradient(900px 260px at 80% 0%, rgba(167, 139, 250, 0.22), transparent 55%);
+        pointer-events: none;
+        opacity: 0.9;
+      }
+      header.hero > * {
+        position: relative;
+      }
+
+      .kicker {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--surface2), transparent 30%);
+        color: var(--muted);
+        font-size: 13px;
+        letter-spacing: 0.01em;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 85%);
+      }
+
+      h1 {
+        margin: 12px 0 6px;
+        font-size: clamp(24px, 3.2vw, 34px);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        margin: 0;
+        color: var(--muted);
+        max-width: 72ch;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+        margin-top: 18px;
+        align-items: start;
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: color-mix(in oklab, var(--surface2), transparent 10%);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16);
+      }
+
+      nav.toc {
+        position: static;
+        padding: 14px;
+        max-width: 980px;
+        margin: 0 auto;
+      }
+
+      details {
+        border-radius: 12px;
+      }
+      summary {
+        cursor: pointer;
+        list-style: none;
+        font-weight: 650;
+        padding: 10px 10px;
+        border-radius: 12px;
+        background: color-mix(in oklab, var(--surface), transparent 40%);
+      }
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .toc ul {
+        margin: 10px 0 0;
+        padding: 0;
+        list-style: none;
+        display: block;
+        max-width: 860px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .toc a {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 10px 10px;
+        border-radius: 10px;
+        color: var(--muted);
+        border: 1px solid transparent;
+        background: transparent;
+        text-align: left;
+      }
+      .toc a:hover {
+        background: color-mix(in oklab, var(--surface), transparent 25%);
+        border-color: color-mix(in oklab, var(--accent), transparent 70%);
+        text-decoration: none;
+        color: var(--text);
+      }
+      .toc li {
+        margin: 2px 0;
+      }
+      .toc .toc-label {
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+      .toc .toc-leader {
+        flex: 1 1 auto;
+        height: 0;
+        border-bottom: 1px dotted color-mix(in oklab, var(--border), transparent 0%);
+        opacity: 0.9;
+        transform: translateY(-2px);
+      }
+      .toc .toc-page {
+        flex: 0 0 auto;
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--faint);
+      }
+
+      main.content {
+        padding: 22px;
+      }
+      section {
+        padding: 16px;
+        border-radius: 14px;
+        background: color-mix(in oklab, var(--surface), transparent 20%);
+        border: 1px solid color-mix(in oklab, var(--border), transparent 10%);
+        margin: 0 0 14px;
+      }
+      section:last-child {
+        margin-bottom: 0;
+      }
+
+      h2 {
+        margin: 0 0 10px;
+        font-size: 20px;
+        line-height: 1.25;
+      }
+      h3 {
+        margin: 14px 0 8px;
+        font-size: 16px;
+        color: var(--text);
+      }
+
+      p {
+        margin: 0 0 10px;
+      }
+      p:last-child {
+        margin-bottom: 0;
+      }
+
+      ul {
+        margin: 8px 0 10px;
+        padding-left: 18px;
+        color: var(--muted);
+      }
+      li {
+        margin: 6px 0;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--surface2), transparent 25%);
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .pill strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .callout {
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid color-mix(in oklab, var(--accent), transparent 65%);
+        background: radial-gradient(700px 140px at 0% 0%, rgba(125, 211, 252, 0.18), transparent 60%),
+          color-mix(in oklab, var(--surface2), transparent 5%);
+      }
+      .callout b {
+        color: var(--text);
+      }
+
+      pre {
+        margin: 10px 0 0;
+        padding: 12px;
+        overflow: auto;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: color-mix(in oklab, var(--bg), white 4%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: color-mix(in oklab, var(--text), white 6%);
+      }
+      pre > code {
+        display: block;
+      }
+      pre > code.hljs {
+        padding: 0;
+        background: transparent;
+      }
+      .hljs {
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .fine {
+        color: var(--faint);
+        font-size: 13px;
+      }
+
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+        header.hero,
+        .card,
+        section {
+          box-shadow: none;
+          background: white;
+          border-color: #ddd;
+        }
+        nav.toc {
+          display: none;
+        }
+        a {
+          text-decoration: underline;
+        }
+        pre {
+          background: #fafafa;
+        }
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+      media="(prefers-color-scheme: dark)"
+    />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="hero">
+        <h1>Использование мессенджера MAX как клиент расписания</h1>
+      </header>
+
+      <div class="layout">
+        <nav class="toc card" aria-label="Оглавление">
+          <details open>
+            <summary>Оглавление</summary>
+            <ul>
+              <li>
+                <a href="#s1">
+                  <span class="toc-label">1. Итоги исследования</span><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 1">1</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s2">
+                  <span class="toc-label">2. Возможности MAX API</span><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 2">2</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s3">
+                  <span class="toc-label">3. Модель продукта «Расписание в MAX»</span
+                  ><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 3">3</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s4">
+                  <span class="toc-label">4. Примеры экранов (UX)</span><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 4">4</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s5">
+                  <span class="toc-label">5. Примеры кода серверной части</span
+                  ><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 5">5</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s6">
+                  <span class="toc-label">6. Мини-приложение и валидация InitData</span
+                  ><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 6">6</span>
+                </a>
+              </li>
+              <li>
+                <a href="#s7">
+                  <span class="toc-label">7. Выводы</span><span class="toc-leader" aria-hidden="true"></span
+                  ><span class="toc-page" aria-label="Страница 7">7</span>
+                </a>
+              </li>
+            </ul>
+          </details>
+        </nav>
+
+        <main class="content card">
+          <section id="s1">
+            <h2>1. Итоги исследования</h2>
+
+            <p>Платформа MAX предоставляет два ключевых механизма интеграции:</p>
+            <ul>
+              <li>
+                <b>Bot API</b> (HTTPS-запросы на <span class="muted">platform-api.max.ru</span>) — позволяет боту
+                читать/отправлять сообщения, работать с чатами, получать события через webhook или long polling,
+                прикреплять inline-клавиатуры (в т.ч. кнопку открытия мини-приложения).
+              </li>
+              <li>
+                <b>Мини-приложение (WebApp) + MAX Bridge</b> — мини-приложение открывается внутри MAX и получает доступ
+                к объекту <span class="muted">window.WebApp</span> через подключение <span class="muted">max-web-app.js</span>,
+                а также получает стартовые параметры (InitData) с обязательной серверной/клиентской валидацией.
+              </li>
+            </ul>
+
+            <p class="muted">
+              По документированным требованиям MAX ориентирован на работу на широком спектре устройств: для мобильных
+              устройств (iOS/Android) упоминаются экраны от 375px, для компьютеров — рекомендации от 1440px, ограничений
+              на браузеры не заявлено.
+            </p>
+            <p>
+              Таким образом, MAX можно использовать как «универсальный клиент» для расписания (телефон/планшет/ПК) при
+              условии, что интерфейс мини-приложения адаптивен и сервер валидирует InitData.
+            </p>
+          </section>
+
+          <section id="s2">
+            <h2>2. Возможности MAX API, полезные для приложения расписания</h2>
+
+            <h3>2.1. Сообщения</h3>
+            <p class="muted">
+              Получение сообщений и отправка сообщений реализованы через методы раздела messages (GET /messages, POST
+              /messages, также редактирование/удаление). Перечень методов приведён в оглавлении API.
+            </p>
+            <p>
+              Поддерживается inline-клавиатура (до 210 кнопок) и тип кнопки <span class="muted">open_app</span>, которая
+              открывает мини-приложение — это ключевой элемент UX: студенту можно показать сообщение «Открыть расписание»
+              и кнопку.
+            </p>
+
+            <h3>2.2. Чаты и групповые механики</h3>
+            <p>Для интеграции с групповыми чатами (например, чат группы/потока) важны методы:</p>
+            <ul>
+              <li>
+                получить список администраторов группового чата (бот должен быть админом):
+                <span class="muted">GET /chats/{chatId}/members/admins</span>.
+              </li>
+              <li>получить закреплённое сообщение: <span class="muted">GET /chats/{chatId}/pin</span>.</li>
+              <li>в оглавлении API есть операции закрепления/удаления закрепа и управление участниками/членством.</li>
+            </ul>
+            <p class="muted">
+              Практическое применение: закреплять в чате группы кнопку “Открыть расписание” (мини-приложение) либо
+              публиковать ежедневные изменения от бота.
+            </p>
+
+            <h3>2.3. Подписки и события (webhook / long polling)</h3>
+            <p class="muted">MAX рекомендует: Long Polling для разработки и тестирования, Webhook для production.</p>
+            <p class="muted">Указан лимит по запросам к platform-api.max.ru (30 rps).</p>
+            <p>Практическое применение:</p>
+            <ul>
+              <li>получать команды студентов («сегодня», «завтра», «моя группа»);</li>
+              <li>отправлять уведомления об изменениях расписания;</li>
+              <li>собирать подписки на уведомления.</li>
+            </ul>
+
+            <h3>2.4. Загрузка файлов</h3>
+            <p class="muted">
+              Метод <span class="muted">POST /uploads</span> выдаёт URL для последующей загрузки файла. Также в
+              документации отмечено, что параметр <span class="muted">type=photo</span> больше не поддерживается;
+              следует использовать <span class="muted">type=image</span>.
+            </p>
+            <p class="muted">Практическое применение: публикация PDF/PNG “расписание недели”, либо выгрузка Excel по запросу.</p>
+          </section>
+
+          <section id="s3">
+            <h2>3. Рекомендуемая модель продукта «Расписание в MAX»</h2>
+
+            <h3>3.1. Компоненты</h3>
+            <ul>
+              <li><b>Мини-приложение (WebApp)</b> — основной UI расписания.</li>
+              <li><b>Бот</b> — канал уведомлений, быстрых команд и «точка входа» в WebApp.</li>
+            </ul>
+
+            <h3>3.2. Роли</h3>
+            <ul>
+              <li><b>Студент</b> — просмотр расписания своей группы, подписки, уведомления.</li>
+              <li><b>Преподаватель</b> — просмотр личного расписания.</li>
+              <li><b>Администратор</b> (вне MAX, в вашей веб-админке) — управление расписанием.</li>
+            </ul>
+          </section>
+
+          <section id="s4">
+            <h2>4. Примеры экранов (UX) для мини-приложения расписания</h2>
+            <p class="muted">
+              Ниже — минимальный комплект экранов, который хорошо ложится на ограничения мессенджера и подходит для
+              телефонов/планшетов/ПК.
+            </p>
+
+            <h3>Экран A. Онбординг / Привязка к группе</h3>
+            <ul>
+              <li>Вариант 1: студент выбирает факультет → курс → группу.</li>
+              <li>Вариант 2: студент вводит код приглашения/QR от старосты.</li>
+              <li>Кнопка “Готово” сохраняет привязку (user_id MAX → group_id в вашей БД).</li>
+            </ul>
+
+            <h3>Экран B. «Сегодня»</h3>
+            <ul>
+              <li>Список пар на текущий день: время, предмет, аудитория, преподаватель.</li>
+              <li>Кнопка “Завтра”, “Неделя”.</li>
+            </ul>
+
+            <h3>Экран C. «Неделя»</h3>
+            <ul>
+              <li>Таблица/карточки по дням недели.</li>
+              <li>Фильтр: “все / только лекции / только лабораторные”.</li>
+            </ul>
+
+            <h3>Экран D. Детали занятия</h3>
+            <ul>
+              <li>Полная карточка: дата, время, аудитория, преподаватели, тип занятия, комментарий.</li>
+              <li>Если занятие перенесено — показывать исходный и новый слот.</li>
+            </ul>
+
+            <h3>Экран E. Уведомления</h3>
+            <ul>
+              <li>Настройки: получать изменения по группе, по конкретным предметам, «только отмены/переносы».</li>
+            </ul>
+          </section>
+
+          <section id="s5">
+            <h2>5. Примеры кода серверной части (Node.js)</h2>
+            <p class="muted">
+              Ниже — примеры, которые соответствуют подходу MAX: bot-интеграция через HTTPS и запуск мини-приложения
+              через кнопку open_app.
+            </p>
+            <div class="callout">
+              <b>Примечание:</b> URL и точные payload полей сообщений/кнопок берите из объектов Message/NewMessageBody в
+              документации, но базовая схема “POST /messages + inline_keyboard/open_app” подтверждена в разделе API.
+            </div>
+
+            <h3>5.1. Отправка сообщения с кнопкой «Открыть расписание» (open_app)</h3>
+            <pre><code class="language-javascript">import fetch from "node-fetch";
+
+const MAX_TOKEN = process.env.MAX_TOKEN;
+const API = "https://platform-api.max.ru";
+
+export async function sendOpenApp(chatId, webAppUrl) {
+  const body = {
+    text: "Расписание доступно в мини-приложении. Нажмите кнопку ниже.",
+    attachments: [
+      {
+        type: "inline_keyboard",
+        payload: {
+          buttons: [
+            [
+              {
+                type: "open_app",
+                text: "Открыть расписание",
+                payload: { url: webAppUrl } // фактическая структура зависит от схемы MAX
+              }
+            ]
+          ]
+        }
+      }
+    ]
+  };
+
+  const res = await fetch(`${API}/messages`, {
+    method: "POST",
+    headers: {
+      "Authorization": MAX_TOKEN,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) throw new Error(`MAX send failed: ${res.status} ${await res.text()}`);
+  return res.json();
+}</code></pre>
+
+            <p class="muted">Ограничения и форматы inline-клавиатуры (включая open_app) описаны в обзоре API.</p>
+
+            <h3>5.2. Получение обновлений: long polling (для DEV)</h3>
+            <pre><code class="language-javascript">export async function pollUpdates(offset) {
+  const url = new URL(`${API}/updates`);
+  if (offset) url.searchParams.set("offset", String(offset));
+
+  const res = await fetch(url, { headers: { Authorization: MAX_TOKEN } });
+  if (!res.ok) throw new Error(`pollUpdates failed: ${res.status}`);
+
+  return res.json(); // ожидаются объекты Update
+}</code></pre>
+            <p class="muted">MAX прямо рекомендует long polling для разработки и webhook для production.</p>
+
+            <h3>5.3. Webhook подписка (для PROD)</h3>
+            <p class="muted">По документации подписки управляются через subscriptions (есть POST и GET).</p>
+            <p>Типовой серверный обработчик webhook (Express):</p>
+            <pre><code class="language-javascript">import express from "express";
+
+const app = express();
+app.use(express.json());
+
+app.post("/max/webhook", async (req, res) =&gt; {
+  const update = req.body; // Update из MAX
+  // 1) определить пользователя/чат
+  // 2) распознать команду или callback
+  // 3) ответить сообщением или изменить подписки
+  res.sendStatus(200);
+});
+
+app.listen(3000);</code></pre>
+
+            <h3>5.4. Загрузка файлов (PDF/PNG расписания)</h3>
+            <p class="muted">
+              MAX выдаёт URL для загрузки через POST /uploads и предупреждает о замене type=photo на type=image.
+            </p>
+            <pre><code class="language-javascript">export async function getUploadUrl(type = "image") {
+  const res = await fetch(`${API}/uploads`, {
+    method: "POST",
+    headers: { Authorization: MAX_TOKEN, "Content-Type": "application/json" },
+    body: JSON.stringify({ type })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // содержит URL для последующей загрузки
+}</code></pre>
+          </section>
+
+          <section id="s6">
+            <h2>6. Мини-приложение: код клиента и валидация InitData</h2>
+
+            <h3>6.1. Подключение MAX Bridge</h3>
+            <p>В мини-приложение подключается библиотека:</p>
+            <pre><code class="language-html">&lt;script src="https://st.max.ru/js/max-web-app.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const webApp = window.WebApp;
+&lt;/script&gt;</code></pre>
+            <p class="muted">Это даёт доступ к объекту window.WebApp.</p>
+
+            <h3>6.2. Валидация InitData</h3>
+            <p class="muted">
+              MAX передаёт стартовые параметры (Init Data), которые нужно валидировать, чтобы убедиться, что данные не
+              подменены. Описание алгоритма включает:
+            </p>
+            <ul>
+              <li>URL-декодирование,</li>
+              <li>сбор key=value без hash,</li>
+              <li>сортировка,</li>
+              <li>формирование строки с \n,</li>
+              <li>вычисление secret_key = HMAC_SHA256("WebAppData", BotToken),</li>
+              <li>вычисление подписи hex(HMAC_SHA256(secret_key, data_check_string)) и сравнение с hash.</li>
+            </ul>
+
+            <p>Пример серверной проверки (Node.js, псевдо-реализация):</p>
+            <pre><code class="language-javascript">import crypto from "crypto";
+
+export function validateInitData(initDataRaw, botToken) {
+  const decoded = decodeURIComponent(initDataRaw);
+  const params = new URLSearchParams(decoded);
+
+  const hash = params.get("hash");
+  params.delete("hash");
+
+  const pairs = [];
+  for (const [k, v] of params.entries()) pairs.push(`${k}=${v}`);
+  pairs.sort();
+
+  const dataCheckString = pairs.join("\n");
+
+  const secretKey = crypto
+    .createHmac("sha256", "WebAppData")
+    .update(botToken)
+    .digest();
+
+  const computed = crypto
+    .createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest("hex");
+
+  return computed === hash;
+}</code></pre>
+          </section>
+
+          <section id="s7">
+            <h2>7. Выводы и оценка применимости MAX для расписания</h2>
+
+            <ul>
+              <li>
+                MAX подходит как кросс-платформенный клиент: мини-приложение реализуется как web-интерфейс и может
+                использоваться на мобильных устройствах и ПК при адаптивной вёрстке; в документации указаны ориентиры по
+                экранам и отсутствие жёстких ограничений на браузеры.
+              </li>
+              <li>
+                Bot API закрывает ключевые сценарии: команды, уведомления, публикация расписания в чатах, закрепы,
+                получение событий через webhook/long polling, отправка файлов.
+              </li>
+              <li>
+                Мини-приложение даёт лучший UX, но требует правильной валидации InitData и привязки пользователя к
+                группе/профилю в вашей БД.
+              </li>
+              <li>
+                Для production нужно соблюдать рекомендации MAX: webhook вместо long polling и учитывать лимит запросов
+                (30 rps).
+              </li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script defer>
+      window.addEventListener("DOMContentLoaded", () => {
+        if (window.hljs) window.hljs.highlightAll();
+      });
+    </script>
+  </body>
+</html>
