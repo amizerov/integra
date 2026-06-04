@@ -1,0 +1,593 @@
+# Система управления расписанием
+
+## Обзор проекта
+
+Веб-приложение для управления учебным расписанием вуза, построенное на современном стеке технологий с использованием серверных компонентов и server actions для работы с базой данных Microsoft SQL Server.
+
+## Технологический стек
+
+### Frontend
+- **Next.js 16.1.1** — React-фреймворк с App Router
+- **React 19** — библиотека для построения пользовательского интерфейса
+- **TypeScript** — статическая типизация
+- **Tailwind CSS** — utility-first CSS фреймворк
+- **SessionStorage** — клиентское хранилище для глобального состояния (SeriesContext)
+
+### Backend
+- **Next.js Server Actions** — серверные функции с директивой `'use server'`
+- **Microsoft SQL Server 2025 CTP** — реляционная СУБД
+- **mssql** — Node.js драйвер для MS SQL Server
+- **SQL Stored Procedures** — бизнес-логика на стороне БД
+  - `dbo.am_GetTermDates` — получение дат семестра по учебному плану
+  - `dbo.SaveSeriesTemplate` — сохранение шаблона серии занятий с множественными преподавателями
+  - `dbo.am_GetEducPlans` — получение учебных планов
+  - `dbo.am_GetSubjects` — получение предметов с нагрузкой
+  - `dbo.am_GetGroupsBySubject` — получение групп по предмету
+
+### База данных
+
+#### Основная схема (dbo)
+- `Facultet` — факультеты
+- `Educ_Plan` — учебные планы
+- `Subject` — дисциплины
+- `Prepod` — преподаватели
+- `Groups` — учебные группы
+
+#### Схема расписания (msu_sched.dbo)
+- `Timetable` — расписания (семестры)
+- `Series` — серии/шаблоны занятий
+- `Schedule` — конкретные занятия
+- `v_Prepod_Series` — связь преподавателей с сериями (многие-ко-многим)
+- `v_Schedule_Prepod` — связь преподавателей с занятиями (многие-ко-многим)
+
+## Workflow создания расписания
+
+### 1. Выбор факультета
+**URL:** `/schedule`
+
+**Действия:**
+- Пользователь выбирает факультет из списка
+- Выбранный факультет сохраняется в `sessionStorage` через `facultySession.ts`
+- Переход к списку расписаний факультета
+
+**Технологии:**
+- Client component (`'use client'`)
+- Session storage для персистентности выбора
+
+### 2. Управление расписаниями
+**URL:** `/schedule/timetable`
+
+**Функционал:**
+- Просмотр списка расписаний факультета (фильтрация по учебному году и семестру)
+- Создание нового расписания
+- Редактирование существующего расписания
+
+**Технологии:**
+- Server action: `getTimetablesByFaculty(nFirm)` — загрузка расписаний
+- Хранение списка в state компонента
+- Фильтры по году и семестру (client-side)
+
+### 3. Редактор расписания
+**URL:** `/schedule/timetable/[id]`
+
+**Компоненты:**
+- `TimetableEditor.tsx` — главный редактор
+- `EducPlansTable.tsx` — таблица учебных планов для выбора
+
+**Workflow:**
+1. **Загрузка расписания:**
+   - Server action: `getTimetableById(id)` загружает данные расписания
+   - Устанавливаются начальные даты, статус, название
+
+2. **Автоматическое заполнение дат семестра:**
+   - При изменении курса (`kurs`) автоматически вычисляется терм
+   - Вызов `getTermDates(planId, yearStudy, term)` → stored procedure `dbo.am_GetTermDates`
+   - Даты автоматически проставляются, но не переписывают ручные правки (`datesTouched` flag)
+
+3. **Выбор учебного плана:**
+   - Server action: `getEducPlans(facultetId, year, semestr, kurs, typeBusinessId, formEducId)`
+   - При клике на план:
+     - Данные сохраняются в `SeriesContext` (timetableId, educPlanId, educPlanName, typeBusinessName, formEducName, kurs, semestr, academicYearStart)
+     - Контекст персистится в `sessionStorage`
+     - Переход к списку серий занятий
+
+**Технологии:**
+- Controlled components для полей формы
+- useEffect для автоподстановки дат
+- Global state через React Context + sessionStorage
+- Транзакции SQL для сохранения изменений
+
+### 4. Список серий занятий
+**URL:** `/schedule/series`
+
+**Функционал:**
+- Отображение созданных серий с фильтрацией по `timetable_id` и `educplan_id`
+- Отображение параметров из контекста (учебный план, год, семестр, курс, тип обучения, форма обучения, даты)
+- Кнопка "Создать серию"
+
+**Server action:**
+```typescript
+getSeriesList({ timetableId, educPlanId })
+```
+
+**SQL:**
+```sql
+SELECT s.*, t.*, COUNT(sc.id) AS lessonsCount
+FROM msu_sched.dbo.Series s
+LEFT JOIN msu_sched.dbo.Timetable t ON t.id = s.timetable_id
+LEFT JOIN msu_sched.dbo.Schedule sc ON sc.series_id = s.id
+WHERE s.timetable_id = @timetable_id 
+  AND s.educplan_id = @educplan_id
+GROUP BY ...
+ORDER BY s.id DESC
+```
+
+**Технологии:**
+- SeriesContext для передачи параметров между страницами
+- Динамическое отображение данных из контекста (избегание stale data)
+
+### 5. Создание серии занятий
+**URL:** `/schedule/series/new`
+
+**Компоненты:**
+- `page.tsx` — главная страница создания
+- `ScheduleGrid.tsx` — сетка расписания с ячейками
+- `LessonsTable.tsx` — таблица созданных занятий
+
+**Workflow:**
+
+#### 5.1. Настройка параметров серии
+1. **Выбор предмета** (SubjectPicker):
+   - Modal с поиском
+   - Server action: `getSubjectsByFaculty(facultetId)`
+   - Возвращает `subject_id` и название
+
+2. **Выбор типа занятия:**
+   - Dropdown: Лекция, Семинар, Лабораторная работа, Практикум, Зачет, Экзамен
+   - Маппинг на `classType_id` (1-6)
+
+3. **Указание часов нагрузки:**
+   - Числовое поле
+
+4. **Выбор преподавателей** (PrepodPicker):
+   - Modal с поиском, множественный выбор
+   - Первый преподаватель = главный (series.prepod_id)
+   - Все преподаватели сохраняются в `v_Prepod_Series`
+
+5. **Выбор аудитории** (RoomPicker):
+   - Modal с поиском аудиторий
+
+6. **Выбор групп** (GroupPicker):
+   - Modal с поиском, множественный выбор
+
+7. **Указание количества недель:**
+   - Числовое поле (по умолчанию 18)
+
+#### 5.2. Автоматическое получение дат серии
+- При изменении курса вызывается `getTermDates(planId, yearStudy, term)`
+- Stored procedure `dbo.am_GetTermDates` возвращает:
+  - `StartDate` и `EndDate` семестра
+  - `DurationWeeks` — длительность в неделях
+  - `Course` — курс обучения
+
+#### 5.3. Построение сетки расписания
+**Технология:** ScheduleGrid component
+
+1. Пользователь выбирает временные слоты в сетке (день недели × пара)
+2. Нажимает "Создать шаблон"
+3. Генерируется список занятий:
+   ```typescript
+   for (week 1..N) {
+     for (each selectedSlot) {
+       const lessonDate = calculateDate(startDate, week, dayOfWeek)
+       lessons.push({
+         date, startTime, endTime,
+         subject, lessonType, prepods, auditoriya, groups
+       })
+     }
+   }
+   ```
+4. Занятия отображаются в `LessonsTable` для редактирования
+
+#### 5.4. Редактирование занятий
+- Каждое занятие можно отредактировать (модальное окно):
+  - Изменить дату, время
+  - Изменить предмет, тип занятия
+  - Изменить преподавателей
+  - Изменить аудиторию
+  - Изменить группы
+- Можно добавить отдельное занятие вручную
+- Можно удалить занятие
+
+### 6. Сохранение серии в базу данных
+
+**Server action:** `saveSeriesToDatabase(seriesData, lessons)`
+
+**Транзакционный процесс:**
+
+```typescript
+// 1. Создание записи Series
+EXEC msu_sched..SaveSeriesTemplate
+  @Name, @TypeBusiness, @Kurs, @Educ_Year,
+  @subject_id, @prepod_id, @classType_id, @hoursLoad,
+  @prepod_ids_json, @prepods_json, @facultet_id
+→ returns series_id
+
+// 2. Привязка timetable_id
+UPDATE msu_sched.dbo.Series
+SET timetable_id = @timetable_id
+WHERE id = @series_id
+
+// 3. Привязка educplan_id
+UPDATE msu_sched.dbo.Series
+SET educplan_id = @educplan_id
+WHERE id = @series_id
+
+// 4. Создание занятий Schedule
+FOR EACH lesson:
+  INSERT INTO msu_sched.dbo.Schedule 
+    (series_id, prepod_id, classType_id, room_id, paraNum, startDt, endDt)
+  OUTPUT INSERTED.id AS schedule_id
+  VALUES (...)
+  
+  // 5. Привязка всех преподавателей к занятию
+  INSERT INTO msu_sched.dbo.v_Schedule_Prepod 
+    (schedule_id, prepod_id)
+  SELECT @schedule_id, prepod_id
+  FROM (VALUES (id1), (id2), ...) AS v(prepod_id)
+```
+
+**Stored Procedure:** `SaveSeriesTemplate`
+
+Функционал:
+- Проверка существования `subject_id`
+- Автоматическое создание записей `Prepod`, если их нет (с `IDENTITY_INSERT`)
+- Обновление `Subject.facultet_id`
+- Парсинг JSON массива преподавателей (OPENJSON/ISJSON)
+- Вставка главного преподавателя в `Series.prepod_id`
+- Вставка всех преподавателей в `v_Prepod_Series`
+
+**Технологии:**
+- SQL Transactions (BEGIN TRANSACTION ... COMMIT / ROLLBACK)
+- Параметризованные запросы через `mssql.Request`
+- Error handling с rollback транзакции
+
+### 7. Просмотр и редактирование серии
+**URL:** `/schedule/series/[id]`
+
+**Функционал:**
+- Загрузка серии и всех занятий
+- Редактирование метаданных серии
+- Редактирование каждого занятия
+- Сохранение изменений
+
+**Server actions:**
+- `getSeriesData(seriesId)` — загрузка данных
+- `saveSeriesEdits(seriesId, { series, lessons })` — сохранение изменений
+
+## Архитектурные решения
+
+### Global State Management
+**SeriesContext** (`app/schedule/SeriesContext.tsx`):
+- React Context с типизированным состоянием
+- Синхронизация с `sessionStorage` для персистентности между переходами
+- Merge-based `setState` для частичных обновлений
+- Хранит: timetableId, educPlanId, educPlanName, kurs, semestr, typeBusinessId/Name, formEducId/Name
+
+### Server Actions Pattern
+Все операции с БД выполняются через server actions:
+- Директива `'use server'` в начале файла/функции
+- Connection pooling через `getDbPool()`
+- Параметризованные запросы для защиты от SQL injection
+- Типизированные возвращаемые значения
+
+### Компонентная архитектура
+- **Reusable Pickers:** SubjectPicker, PrepodPicker, RoomPicker, GroupPicker, LessonPicker
+- **Base Component:** PickerBase с общей логикой модальных окон и поиска
+- **Controlled Components:** формы с управляемыми состояниями через props
+
+### Обработка дат
+- Хранение в БД: `DateTime` (SQL Server)
+- Передача по сети: ISO 8601 строки
+- Отображение: форматирование через `toLocaleDateString('ru-RU')`
+- Вычисление: учёт timezone при создании Date объектов
+
+## План дальнейшего развития
+
+### 1. Верификация и валидация (Critical)
+
+#### 1.1. Проверка занятости аудиторий
+**Задача:** Предотвратить конфликты использования аудиторий
+
+**Реализация:**
+- Создать stored procedure `dbo.CheckRoomConflicts`:
+  ```sql
+  CREATE PROCEDURE CheckRoomConflicts
+    @room_id INT,
+    @start_dt DATETIME,
+    @end_dt DATETIME,
+    @exclude_schedule_id INT = NULL
+  AS
+  SELECT TOP 1 
+    sc.id, sc.startDt, sc.endDt,
+    subj.Name_Subject AS subject,
+    p.FIO AS teacher
+  FROM msu_sched.dbo.Schedule sc
+  JOIN dbo.Subject subj ON sc.subject_id = subj.PrK_Subject
+  JOIN dbo.Prepod p ON sc.prepod_id = p.id
+  WHERE sc.room_id = @room_id
+    AND sc.id != ISNULL(@exclude_schedule_id, 0)
+    AND (
+      (sc.startDt <= @start_dt AND sc.endDt > @start_dt) OR
+      (sc.startDt < @end_dt AND sc.endDt >= @end_dt) OR
+      (sc.startDt >= @start_dt AND sc.endDt <= @end_dt)
+    )
+  ```
+
+- UI улучшения:
+  - При выборе аудитории в `RoomPicker` показывать загруженность
+  - При создании/редактировании занятия — real-time проверка конфликтов
+  - Визуальное предупреждение: 🔴 Конфликт / 🟡 Близкое время / 🟢 Свободна
+  - Опция "Показать альтернативные аудитории" (свободные в это время)
+
+#### 1.2. Проверка занятости преподавателей
+**Задача:** Предотвратить двойную нагрузку преподавателя
+
+**Реализация:**
+- Stored procedure `dbo.CheckPrepodConflicts`:
+  ```sql
+  CREATE PROCEDURE CheckPrepodConflicts
+    @prepod_ids NVARCHAR(MAX), -- JSON array
+    @start_dt DATETIME,
+    @end_dt DATETIME,
+    @exclude_schedule_id INT = NULL
+  AS
+  SELECT 
+    p.id AS prepod_id,
+    p.FIO,
+    sc.id AS conflicting_schedule_id,
+    sc.startDt, sc.endDt,
+    subj.Name_Subject AS subject,
+    r.Name AS room
+  FROM dbo.Prepod p
+  CROSS APPLY OPENJSON(@prepod_ids) WITH (prepod_id INT '$') AS jp
+  JOIN msu_sched.dbo.v_Schedule_Prepod vsp ON vsp.prepod_id = jp.prepod_id
+  JOIN msu_sched.dbo.Schedule sc ON sc.id = vsp.schedule_id
+  JOIN dbo.Subject subj ON sc.subject_id = subj.PrK_Subject
+  JOIN dbo.Room r ON sc.room_id = r.id
+  WHERE p.id = jp.prepod_id
+    AND sc.id != ISNULL(@exclude_schedule_id, 0)
+    AND (time overlap condition)
+  ```
+
+- UI улучшения:
+  - В `PrepodPicker` — индикатор загруженности преподавателя на выбранное время
+  - Предупреждение при конфликте, но разрешение сохранения (с подтверждением)
+  - Страница "Нагрузка преподавателя" — calendar view всех занятий
+
+#### 1.3. Проверка нагрузки по учебному плану
+**Задача:** Контроль соответствия запланированных часов нагрузке из учебного плана
+
+**Реализация:**
+- Server action: `validatePlanHours(educPlanId, subjectId)`
+- Сравнение:
+  - Планируемые часы из Series.hoursLoad
+  - Запланированные часы из учебного плана (таблица `Subjects_for_Plans`)
+- Dashboard: "Отклонение от плана" для каждой дисциплины
+- Визуализация: прогресс-бар (выполнено / запланировано)
+
+#### 1.4. Проверка групп
+**Задача:** Исключить наложение занятий для одной группы
+
+**Реализация:**
+- Аналогично проверке преподавателей
+- Таблица связи `Schedule_Groups` (многие-ко-многим)
+- Stored procedure `dbo.CheckGroupConflicts`
+- UI: предупреждение при создании занятия
+
+### 2. Отчётность и аналитика
+
+#### 2.1. Нагрузка преподавателей
+**Компонент:** `/schedule/reports/teacher-load`
+
+**Функционал:**
+- Фильтры: факультет, учебный год, семестр, преподаватель
+- Отчёт по преподавателю:
+  - Общее количество часов (лекции/семинары/практикумы)
+  - Список дисциплин
+  - Распределение по группам
+  - Расписание по дням недели
+- Export: PDF, Excel
+
+**Технологии:**
+- Stored procedure для агрегации данных
+- Библиотека для генерации PDF (react-pdf, puppeteer)
+- Excel export через `xlsx` библиотеку
+
+#### 2.2. Занятость аудиторий
+**Компонент:** `/schedule/reports/room-utilization`
+
+**Функционал:**
+- Heat map загруженности аудиторий по дням/времени
+- Процент использования (занято / всего доступных слотов)
+- Фильтры: корпус, тип аудитории, вместимость
+- Рекомендации по оптимизации
+
+#### 2.3. Расписание группы
+**Компонент:** `/schedule/group/[id]`
+
+**Функционал:**
+- Недельное расписание группы
+- Экспорт в PDF (для печати)
+- Экспорт в ICS (календарь)
+- Публичная ссылка (без авторизации)
+
+### 3. UX/UI улучшения
+
+#### 3.1. Drag & Drop для занятий
+- Библиотека: `dnd-kit` или `react-beautiful-dnd`
+- Перетаскивание занятий в сетке расписания
+- Автоматическое пересохранение при изменении времени
+
+#### 3.2. Bulk Operations
+- Множественный выбор занятий (checkbox)
+- Групповые операции:
+  - Изменить аудиторию для всех
+  - Изменить преподавателя
+  - Переместить на другое время (сдвиг)
+  - Удалить выбранные
+
+#### 3.3. Шаблоны серий
+- Сохранение часто используемых конфигураций
+- "Создать серию из шаблона"
+- Библиотека шаблонов на уровне факультета
+
+#### 3.4. Уведомления
+- Websockets или Server-Sent Events для real-time обновлений
+- Уведомления при конфликтах
+- Email рассылка расписания преподавателям
+
+### 4. Интеграции
+
+#### 4.1. Импорт из внешних систем
+- Парсинг Excel файлов с расписанием
+- Импорт из 1С или других учётных систем
+- Валидация и маппинг данных
+
+#### 4.2. Экспорт расписания
+- iCalendar (.ics) для импорта в Google Calendar / Outlook
+- JSON API для мобильных приложений
+- RSS feed для обновлений
+
+#### 4.3. Интеграция с СДО (LMS)
+- Автоматическая синхронизация расписания с Moodle/Canvas
+- Создание онлайн-встреч (Zoom/Teams) для занятий
+- Отправка напоминаний студентам
+
+### 5. Производительность и масштабируемость
+
+#### 5.1. Кэширование
+- Next.js cache для серверных компонентов
+- Redis для кэширования частых запросов (списки факультетов, аудиторий)
+- Revalidation стратегии
+
+#### 5.2. Database optimization
+- Индексы на `msu_sched.dbo.Schedule`:
+  ```sql
+  CREATE INDEX IX_Schedule_Room_Time 
+    ON Schedule(room_id, startDt, endDt)
+  
+  CREATE INDEX IX_Schedule_Series 
+    ON Schedule(series_id) INCLUDE (startDt, endDt)
+  ```
+- Материализованные представления для сложных отчётов
+- Партиционирование таблицы Schedule по учебным годам
+
+#### 5.3. Мониторинг
+- Логирование медленных запросов (> 1 сек)
+- Application Insights или аналоги для трассировки
+- Алерты при ошибках сохранения
+
+### 6. Безопасность и права доступа
+
+#### 6.1. Ролевая модель
+- **Администратор** — полный доступ
+- **Методист факультета** — создание/редактирование расписания факультета
+- **Преподаватель** — просмотр своего расписания, редактирование доп. информации
+- **Студент** — просмотр расписания группы
+
+**Реализация:**
+- Middleware для проверки прав доступа
+- Row-level security в БД (SQL Server RLS)
+- Таблица `Users` и `User_Roles`
+
+#### 6.2. Аудит изменений
+- Таблица `Audit_Log`:
+  ```sql
+  CREATE TABLE Audit_Log (
+    id INT IDENTITY PRIMARY KEY,
+    table_name NVARCHAR(100),
+    record_id INT,
+    action NVARCHAR(20), -- INSERT, UPDATE, DELETE
+    old_values NVARCHAR(MAX), -- JSON
+    new_values NVARCHAR(MAX), -- JSON
+    user_id INT,
+    changed_at DATETIME2 DEFAULT GETDATE()
+  )
+  ```
+- Триггеры на таблицы Series и Schedule
+- UI для просмотра истории изменений
+
+### 7. Мобильное приложение
+- React Native / Flutter
+- Функционал:
+  - Просмотр расписания группы/преподавателя
+  - Push-уведомления о изменениях
+  - Навигация до аудитории (интеграция с картами корпусов)
+
+## Текущий статус проекта
+
+### ✅ Реализовано
+- [x] Выбор факультета и сохранение в сессии
+- [x] CRUD расписаний (Timetable)
+- [x] Интеграция с учебными планами
+- [x] Автоматическое определение дат семестра через `am_GetTermDates`
+- [x] Создание серий занятий с параметрами
+- [x] Построение сетки расписания на N недель
+- [x] Поддержка множественных преподавателей (series + schedule)
+- [x] Сохранение в БД через транзакции
+- [x] Редактирование серий и занятий
+- [x] Фильтрация списков по timetable_id и educplan_id
+- [x] Глобальный контекст с персистентностью
+
+### 🚧 В разработке
+- [ ] Проверка конфликтов аудиторий
+- [ ] Проверка конфликтов преподавателей
+- [ ] Проверка конфликтов групп
+- [ ] Валидация нагрузки по учебному плану
+
+### 📋 Запланировано
+- [ ] Отчёты и аналитика
+- [ ] Экспорт расписания (PDF, iCal)
+- [ ] Drag & Drop интерфейс
+- [ ] Шаблоны серий
+- [ ] Ролевая модель и права доступа
+- [ ] Аудит изменений
+- [ ] Оптимизация производительности
+- [ ] Мобильное приложение
+
+## Deployment
+
+### Development
+```bash
+npm run dev
+# http://localhost:3000
+```
+
+### Production Build
+```bash
+npm run build
+npm start
+```
+
+### Environment Variables
+```env
+DB_SERVER=your-sql-server
+DB_DATABASE=NewStud
+DB_USER=your-username
+DB_PASSWORD=your-password
+DB_ENCRYPT=true
+DB_TRUST_SERVER_CERTIFICATE=true
+```
+
+### Database Setup
+1. Развернуть схему `msu_sched` (Timetable, Series, Schedule, junction tables)
+2. Загрузить stored procedures из `sql/` директории
+3. Проверить compatibility level БД (≥ 160 для OPENJSON/TRY_CONVERT)
+4. Создать индексы для производительности
+
+## Контакты и поддержка
+
+- **Репозиторий:** `d:\Projects\nextjs\sched5`
+- **SQL Scripts:** `sql/` директория
+- **Документация:** `docs/` директория
